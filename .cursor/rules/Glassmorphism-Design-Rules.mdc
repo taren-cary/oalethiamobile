@@ -1,0 +1,986 @@
+---
+alwaysApply: true
+---
+
+# Space Navigator - Glassmorphism Mobile App
+
+## Project Overview
+A React Native Expo app with a cosmic/space theme featuring glassmorphism UI design, custom circular bottom navigation, and premium interactive effects.
+
+## Design Reference
+Background image: [path/to/your/background/image.jpg]
+Style: Modern space aesthetic with depth through layered glass effects and subtle animations
+
+---
+
+## Typography System
+
+### Fonts
+```javascript
+fonts: {
+  heading: 'Orbitron',        // Headings, titles, navigation labels
+  body: 'Inter',              // Body text, descriptions, content
+}
+```
+
+### Font Installation
+```bash
+npx expo install expo-font @expo-google-fonts/orbitron @expo-google-fonts/inter
+```
+
+### Font Weights & Sizes
+```javascript
+typography: {
+  // Headings (Orbitron)
+  h1: { fontFamily: 'Orbitron_700Bold', fontSize: 32, lineHeight: 40 },
+  h2: { fontFamily: 'Orbitron_700Bold', fontSize: 28, lineHeight: 36 },
+  h3: { fontFamily: 'Orbitron_600SemiBold', fontSize: 24, lineHeight: 32 },
+  h4: { fontFamily: 'Orbitron_600SemiBold', fontSize: 20, lineHeight: 28 },
+  h5: { fontFamily: 'Orbitron_600SemiBold', fontSize: 18, lineHeight: 24 },
+  
+  // Body (Inter)
+  bodyLarge: { fontFamily: 'Inter_400Regular', fontSize: 16, lineHeight: 24 },
+  body: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 22 },
+  bodySmall: { fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18 },
+  
+  // Labels (Inter)
+  label: { fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20 },
+  labelSmall: { fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 16 },
+  
+  // Navigation (Orbitron)
+  navLabel: { fontFamily: 'Orbitron_500Medium', fontSize: 10, lineHeight: 12 },
+}
+```
+
+---
+
+## Icon System
+
+### Icon Library
+Use **Ionicons** (built into Expo)
+```javascript
+import { Ionicons } from '@expo/vector-icons';
+```
+
+### Icon Sizes
+```javascript
+iconSizes: {
+  navigation: 24,        // Bottom nav circles
+  inline: 20,            // Inline with text
+  feature: 32,           // Feature highlights
+  small: 16,             // Secondary actions
+  large: 48,             // Empty states, heroes
+}
+```
+
+### Icon Style
+- **Preferred**: Outlined style (e.g., 'home-outline', 'person-outline')
+- **Active state**: Filled style (e.g., 'home', 'person')
+- **Consistency**: Always use same style family across app
+
+---
+
+## Color Palette
+```javascript
+colors: {
+  // Glassmorphism - Core glass effects
+  glass: {
+    light: 'rgba(255, 255, 255, 0.1)',      // Subtle glass
+    medium: 'rgba(255, 255, 255, 0.15)',    // Standard glass
+    strong: 'rgba(255, 255, 255, 0.2)',     // Prominent glass
+    extraStrong: 'rgba(255, 255, 255, 0.25)', // High emphasis
+  },
+  
+  // Glass Borders
+  glassBorder: {
+    default: 'rgba(255, 255, 255, 0.2)',
+    active: 'rgba(255, 255, 255, 0.4)',
+    subtle: 'rgba(255, 255, 255, 0.1)',
+  },
+  
+  // Accent Colors - Cosmic theme
+  primary: '#6366f1',        // Indigo - main actions
+  secondary: '#8b5cf6',      // Purple - secondary actions
+  accent: '#06b6d4',         // Cyan - highlights
+  success: '#10b981',        // Green - success states
+  warning: '#f59e0b',        // Amber - warnings
+  error: '#ef4444',          // Red - errors
+  
+  // Gradients
+  gradients: {
+    primary: ['#6366f1', '#8b5cf6'],           // Indigo to purple
+    secondary: ['#8b5cf6', '#06b6d4'],         // Purple to cyan
+    cosmic: ['#6366f1', '#8b5cf6', '#06b6d4'], // Full cosmic range
+    glow: ['rgba(99, 102, 241, 0.5)', 'rgba(139, 92, 246, 0.5)'],
+  },
+  
+  // Text Colors
+  text: {
+    primary: '#ffffff',
+    secondary: 'rgba(255, 255, 255, 0.7)',
+    tertiary: 'rgba(255, 255, 255, 0.5)',
+    disabled: 'rgba(255, 255, 255, 0.3)',
+  },
+  
+  // Backgrounds
+  background: {
+    primary: '#0a0a0f',      // Deep space
+    secondary: '#1a1a2e',    // Lighter space
+    overlay: 'rgba(0, 0, 0, 0.6)',
+  },
+}
+```
+
+---
+
+## Bottom Navigation - CRITICAL SPECS
+
+### Structure
+**DO NOT use standard React Navigation tab bar**
+Create custom bottom navigation component with individual circular buttons
+
+### Layout Requirements
+```javascript
+bottomNav: {
+  // Container
+  container: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    paddingBottom: 20, // Safe area
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  
+  // Individual Circles
+  circle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30, // Perfect circle
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Spacing
+  itemCount: 5, // Adjust based on your tabs (4-5 recommended)
+  spacing: 'space-evenly', // Equal spacing across width
+}
+```
+
+### Glassmorphism Effect on Nav Circles
+```javascript
+navGlassStyle: {
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  borderWidth: 1,
+  borderColor: 'rgba(255, 255, 255, 0.2)',
+  
+  // Use expo-blur BlurView as wrapper
+  // BlurView intensity: 20 (medium blur)
+  // BlurView tint: 'light'
+  
+  // Shadows
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.3,
+  shadowRadius: 8,
+  elevation: 8,
+}
+```
+
+### Active State for Nav Circles
+```javascript
+navActiveState: {
+  // Scale animation
+  transform: [{ scale: 1.1 }],
+  
+  // Enhanced glow
+  shadowColor: '#6366f1',
+  shadowOffset: { width: 0, height: 0 },
+  shadowOpacity: 0.6,
+  shadowRadius: 16,
+  
+  // Brighter border
+  borderColor: 'rgba(255, 255, 255, 0.4)',
+  borderWidth: 1.5,
+  
+  // Icon color
+  iconColor: '#06b6d4', // Accent cyan
+}
+```
+
+### Inactive State for Nav Circles
+```javascript
+navInactiveState: {
+  transform: [{ scale: 1 }],
+  iconColor: 'rgba(255, 255, 255, 0.6)',
+}
+```
+
+---
+
+## Glassmorphism Component Standards
+
+### Base Glass Container Component
+Create reusable `<GlassContainer>` component:
+```typescript
+interface GlassContainerProps {
+  blur?: 'light' | 'medium' | 'strong';
+  children: React.ReactNode;
+  style?: ViewStyle;
+  pressable?: boolean;
+  onPress?: () => void;
+}
+```
+
+### Glass Blur Intensities
+```javascript
+blurIntensity: {
+  light: 10,      // Subtle, for overlays
+  medium: 20,     // Standard, for cards
+  strong: 30,     // Prominent, for modals
+}
+```
+
+### Glass Card Standard Style
+```javascript
+glassCard: {
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  borderRadius: 20,
+  borderWidth: 1,
+  borderColor: 'rgba(255, 255, 255, 0.2)',
+  padding: 20,
+  
+  // Shadows for depth
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 8 },
+  shadowOpacity: 0.3,
+  shadowRadius: 12,
+  elevation: 8,
+}
+```
+
+---
+
+## Interactive Effects - Tier 1 (Core)
+
+### Active/Pressed States
+Apply to ALL interactive elements:
+```javascript
+pressedState: {
+  // Animation timing
+  duration: 150,
+  easing: 'ease-out',
+  
+  // Transform
+  scale: 0.95,
+  
+  // Optional: slight opacity change
+  opacity: 0.9,
+}
+```
+
+### Haptic Feedback
+```javascript
+import * as Haptics from 'expo-haptics';
+
+hapticRules: {
+  // Navigation taps
+  navigation: Haptics.ImpactFeedbackStyle.Light,
+  
+  // Button presses
+  button: Haptics.ImpactFeedbackStyle.Light,
+  
+  // Important actions (submit, delete)
+  important: Haptics.ImpactFeedbackStyle.Medium,
+  
+  // Toggle/selection
+  selection: Haptics.selectionAsync(),
+  
+  // Long press trigger
+  longPress: Haptics.ImpactFeedbackStyle.Heavy,
+}
+```
+
+**Rule**: Trigger haptics BEFORE visual feedback for better perceived responsiveness
+
+### Loading States
+```javascript
+loadingOverlay: {
+  // Full screen glassmorphic overlay
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+  
+  // Blur background content
+  // Use BlurView with intensity: 20
+}
+
+loadingSpinner: {
+  // Use ActivityIndicator with color: '#6366f1'
+  // Or custom animated spinner with cosmic colors
+}
+```
+
+### Accessibility - Reduced Motion Support
+```javascript
+import { AccessibilityInfo } from 'react-native';
+
+// Check for reduced motion preference
+const [reduceMotion, setReduceMotion] = useState(false);
+
+useEffect(() => {
+  AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+}, []);
+
+// Conditionally disable animations
+const animationConfig = reduceMotion ? { duration: 0 } : { duration: 300 };
+```
+
+**Accessibility Requirements**:
+- All interactive elements must have accessible labels
+- Focus indicators visible (2px border, accent color)
+- Minimum touch target: 44x44 points
+- Color contrast ratio: 4.5:1 minimum for text
+- Support VoiceOver/TalkBack
+
+---
+
+## Interactive Effects - Tier 2 (Polish)
+
+### Gradient Borders on Glass Elements
+```javascript
+// Wrap glass containers with LinearGradient for borders
+import { LinearGradient } from 'expo-linear-gradient';
+
+<LinearGradient
+  colors={['rgba(99, 102, 241, 0.5)', 'rgba(139, 92, 246, 0.5)']}
+  start={{ x: 0, y: 0 }}
+  end={{ x: 1, y: 1 }}
+  style={{ padding: 1, borderRadius: 20 }}
+>
+  <BlurView intensity={20} style={glassContent}>
+    {/* Content */}
+  </BlurView>
+</LinearGradient>
+```
+
+### Frosted Glass Intensity Variation
+Use different blur levels for hierarchy:
+```javascript
+glassHierarchy: {
+  // Background elements
+  background: { blur: 10, opacity: 0.1 },
+  
+  // Cards and containers
+  card: { blur: 20, opacity: 0.15 },
+  
+  // Modals and overlays
+  modal: { blur: 30, opacity: 0.2 },
+  
+  // Active/focused elements
+  active: { blur: 20, opacity: 0.25 },
+}
+```
+
+### Stagger Animations
+For lists and grids:
+```javascript
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
+// Apply to list items
+{items.map((item, index) => (
+  <Animated.View
+    key={item.id}
+    entering={FadeInDown.delay(index * 100).springify()}
+  >
+    <GlassCard>{/* content */}</GlassCard>
+  </Animated.View>
+))}
+
+staggerRules: {
+  delay: 100, // ms between each item
+  maxDelay: 500, // cap total delay for long lists
+  maxItems: 5, // only stagger first 5 items in long lists
+}
+```
+
+### Empty States
+```javascript
+emptyState: {
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  
+  // Large icon (Ionicons)
+  icon: {
+    size: 64,
+    color: 'rgba(255, 255, 255, 0.3)',
+    name: 'planet-outline', // or relevant cosmic icon
+  },
+  
+  // Title (Orbitron)
+  title: {
+    fontFamily: 'Orbitron_600SemiBold',
+    fontSize: 20,
+    color: '#ffffff',
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  
+  // Description (Inter)
+  description: {
+    fontFamily: 'Inter_400Regular',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  
+  // CTA Button (glass style)
+  button: {
+    // Use GlassContainer with gradient border
+  }
+}
+```
+
+---
+
+## Interactive Effects - Tier 3 (Enhanced UX)
+
+### Skeleton Loaders
+```javascript
+skeletonStyle: {
+  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  borderRadius: 12,
+  overflow: 'hidden',
+  
+  // Shimmer effect using LinearGradient
+  shimmer: {
+    colors: [
+      'rgba(255, 255, 255, 0)',
+      'rgba(255, 255, 255, 0.1)',
+      'rgba(255, 255, 255, 0)',
+    ],
+    // Animated from left to right
+    duration: 1500,
+  }
+}
+
+// Common skeleton shapes
+skeletonShapes: {
+  title: { width: '60%', height: 24, marginBottom: 12 },
+  text: { width: '100%', height: 16, marginBottom: 8 },
+  textShort: { width: '40%', height: 16, marginBottom: 8 },
+  avatar: { width: 48, height: 48, borderRadius: 24 },
+  card: { width: '100%', height: 120, borderRadius: 20 },
+}
+```
+
+### Pull to Refresh
+```javascript
+refreshControl: {
+  // Custom RefreshControl for ScrollView/FlatList
+  tintColor: '#6366f1', // Spinner color iOS
+  colors: ['#6366f1', '#8b5cf6'], // Spinner colors Android
+  
+  // Custom refresh indicator (optional)
+  // Circular cosmic spinner with glass background
+}
+```
+
+### Long Press Interactions
+```javascript
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+
+longPressConfig: {
+  duration: 500, // ms to trigger
+  
+  onLongPress: () => {
+    // Trigger haptic
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    
+    // Scale up element
+    // Show glassmorphic context menu
+  },
+  
+  // Visual feedback during press
+  scaleOnPress: 1.05,
+  
+  // Context menu style
+  contextMenu: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    // BlurView intensity: 30
+    padding: 8,
+  }
+}
+```
+
+### Text Glow/Halo on Headings
+```javascript
+headingGlow: {
+  textShadowColor: 'rgba(99, 102, 241, 0.6)',
+  textShadowOffset: { width: 0, height: 0 },
+  textShadowRadius: 10,
+}
+
+// Apply to h1, h2, h3 headings
+// Stronger glow on active/focused states
+activeHeadingGlow: {
+  textShadowColor: 'rgba(99, 102, 241, 0.8)',
+  textShadowRadius: 16,
+}
+```
+
+### Progress Indicators
+```javascript
+progressIndicator: {
+  // Circular progress (preferred for space theme)
+  circular: {
+    size: 48,
+    strokeWidth: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    
+    // Use LinearGradient for progress stroke
+    progressColors: ['#6366f1', '#06b6d4'],
+    
+    // Animate from 0 to target percentage
+    duration: 1000,
+    easing: 'ease-out',
+  },
+  
+  // Linear progress bar (alternative)
+  linear: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    progressColors: ['#6366f1', '#8b5cf6'],
+  }
+}
+```
+
+---
+
+## Layout & Spacing
+
+### Screen Layout
+```javascript
+screen: {
+  // Safe area padding
+  paddingTop: 'SafeAreaInsets.top',
+  paddingBottom: 'SafeAreaInsets.bottom + 100', // Extra for bottom nav
+  paddingHorizontal: 20,
+  
+  // Background
+  backgroundColor: '#0a0a0f',
+  
+  // Full screen background image
+  backgroundImage: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  }
+}
+```
+
+### Spacing Scale
+```javascript
+spacing: {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  
+  // Component specific
+  cardPadding: 20,
+  screenPadding: 20,
+  sectionGap: 24,
+  itemGap: 16,
+}
+```
+
+### Border Radius Scale
+```javascript
+borderRadius: {
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  full: 9999, // For circles
+  
+  // Component specific
+  card: 20,
+  button: 16,
+  input: 12,
+  navCircle: 30,
+}
+```
+
+---
+
+## Animation Guidelines
+
+### Timing
+```javascript
+animation: {
+  // Micro interactions
+  quick: 150,
+  
+  // Standard transitions
+  normal: 300,
+  
+  // Page transitions
+  slow: 500,
+  
+  // Floating/ambient
+  ambient: 3000,
+}
+```
+
+### Easing
+```javascript
+import { Easing } from 'react-native-reanimated';
+
+easing: {
+  // Buttons, taps
+  press: Easing.out(Easing.ease),
+  
+  // Page transitions
+  page: Easing.inOut(Easing.ease),
+  
+  // Floating animations
+  float: Easing.inOut(Easing.sine),
+  
+  // Spring for playful interactions
+  spring: { damping: 15, stiffness: 150 },
+}
+```
+
+### Animation Performance Rules
+- **ALWAYS** use `useNativeDriver: true` when possible
+- **LIMIT** simultaneous animations to 3-4 elements
+- **AVOID** animating layout properties (width, height, margin)
+- **PREFER** transform and opacity animations
+- **TEST** on mid-range Android devices (Pixel 4a equivalent)
+- **MONITOR** JS thread FPS, maintain above 50fps
+- **DISABLE** heavy animations when `reduceMotion` is enabled
+
+---
+
+## Component Architecture
+
+### Required Libraries
+```json
+{
+  "expo-blur": "~13.0.2",
+  "expo-haptics": "~13.0.1",
+  "expo-linear-gradient": "~13.0.2",
+  "react-native-reanimated": "~3.10.1",
+  "react-native-gesture-handler": "~2.16.1",
+  "@react-navigation/native": "^6.1.9",
+  "@react-navigation/native-stack": "^6.9.17",
+  "expo-font": "~12.0.5",
+  "@expo-google-fonts/orbitron": "^0.2.3",
+  "@expo-google-fonts/inter": "^0.2.3"
+}
+```
+
+### Core Reusable Components to Create
+
+1. **GlassContainer**
+   - Props: blur, children, style, pressable, onPress, onLongPress
+   - Uses BlurView + gradient border wrapper
+   - Handles press states with scale animation + haptic
+
+2. **GlassCard**
+   - Extends GlassContainer
+   - Standard padding and shadows
+   - Optional header, body, footer slots
+
+3. **CircularNavButton**
+   - 60x60 circle with glass effect
+   - Icon + optional label
+   - Active/inactive states with animation
+   - Haptic feedback on press
+
+4. **BottomNavigation**
+   - Container for 4-5 CircularNavButtons
+   - Absolute positioning
+   - Safe area aware
+
+5. **GlassButton**
+   - Primary and secondary variants
+   - Optional gradient border
+   - Press animation + haptic
+   - Loading state
+
+6. **SkeletonLoader**
+   - Animated shimmer effect
+   - Common shape variants
+   - Accepts custom dimensions
+
+7. **EmptyState**
+   - Icon, title, description, CTA
+   - Consistent cosmic theming
+
+8. **ProgressCircle**
+   - Animated circular progress
+   - Gradient stroke
+   - Percentage display
+
+---
+
+## Code Standards
+
+### TypeScript
+- **USE** TypeScript for all components
+- **DEFINE** proper prop types with interfaces
+- **AVOID** `any` type, use specific types
+
+### Component Structure
+```typescript
+// Functional components with hooks
+const MyComponent: React.FC<Props> = ({ prop1, prop2 }) => {
+  // Hooks at top
+  const [state, setState] = useState();
+  const animatedValue = useSharedValue(0);
+  
+  // Memoized values
+  const computedValue = useMemo(() => { }, [deps]);
+  
+  // Animated styles
+  const animatedStyle = useAnimatedStyle(() => { }, [deps]);
+  
+  // Effects
+  useEffect(() => { }, [deps]);
+  
+  // Render
+  return ( );
+};
+```
+
+### Theme Management
+```typescript
+// Create centralized theme file: theme/index.ts
+export const theme = {
+  colors: { /* ... */ },
+  typography: { /* ... */ },
+  spacing: { /* ... */ },
+  // etc.
+};
+
+// Use throughout app
+import { theme } from '@/theme';
+```
+
+### File Organization
+```
+src/
+├── components/
+│   ├── glass/
+│   │   ├── GlassContainer.tsx
+│   │   ├── GlassCard.tsx
+│   │   └── GlassButton.tsx
+│   ├── navigation/
+│   │   ├── BottomNavigation.tsx
+│   │   └── CircularNavButton.tsx
+│   └── common/
+│       ├── SkeletonLoader.tsx
+│       ├── EmptyState.tsx
+│       └── ProgressCircle.tsx
+├── screens/
+├── theme/
+│   └── index.ts
+├── constants/
+├── hooks/
+└── utils/
+```
+
+---
+
+## Testing & Performance
+
+### Performance Targets
+- **App launch**: < 2 seconds
+- **Screen transitions**: 60fps
+- **JS thread**: > 50fps during animations
+- **Memory**: < 150MB baseline
+
+### Device Testing Priority
+1. iOS: iPhone 12 and newer
+2. Android: Pixel 4a equivalent (mid-range)
+3. Test reduced motion on both platforms
+
+### Optimization Checklist
+- [ ] Memoize expensive computations
+- [ ] Use FlatList for long lists (not ScrollView)
+- [ ] Optimize images (use WebP, proper dimensions)
+- [ ] Remove console.logs in production
+- [ ] Use Hermes engine (enabled by default in Expo)
+- [ ] Profile with Flipper/React DevTools
+
+---
+
+## Don'ts - Critical Mistakes to Avoid
+
+### Navigation
+- ❌ **DON'T** use standard React Navigation tab bar styling
+- ❌ **DON'T** use rectangular tab bars
+- ✅ **DO** create custom circular glass navigation
+
+### Glassmorphism
+- ❌ **DON'T** use solid backgrounds on primary UI elements
+- ❌ **DON'T** ignore backdrop blur (BlurView required)
+- ❌ **DON'T** make blur too intense (readability suffers)
+- ✅ **DO** layer multiple glass elements for depth
+
+### Animations
+- ❌ **DON'T** animate all elements simultaneously
+- ❌ **DON'T** use long animation durations (> 500ms)
+- ❌ **DON'T** ignore reduced motion preferences
+- ✅ **DO** use native driver when possible
+
+### Typography
+- ❌ **DON'T** mix too many font weights
+- ❌ **DON'T** use Orbitron for body text (hard to read)
+- ❌ **DON'T** ignore line height (crucial for readability)
+- ✅ **DO** maintain typographic hierarchy
+
+### Accessibility
+- ❌ **DON'T** rely on color alone for information
+- ❌ **DON'T** forget accessible labels
+- ❌ **DON'T** make touch targets too small (< 44x44)
+- ✅ **DO** test with VoiceOver/TalkBack
+
+### Colors
+- ❌ **DON'T** use sharp corners on primary elements
+- ❌ **DON'T** overuse gradients (use strategically)
+- ❌ **DON'T** forget contrast ratios for text
+- ✅ **DO** prefer 16-20px border radius on cards
+
+---
+
+## Quick Start Checklist
+
+### Phase 1: Foundation
+- [ ] Install required dependencies
+- [ ] Load Orbitron and Inter fonts
+- [ ] Set up theme/index.ts with all colors and typography
+- [ ] Create GlassContainer base component
+- [ ] Implement bottom navigation with circles
+- [ ] Add background image to main screens
+
+### Phase 2: Core Components
+- [ ] Build GlassCard component
+- [ ] Build GlassButton component
+- [ ] Create CircularNavButton with active states
+- [ ] Add haptic feedback to all interactions
+- [ ] Implement loading states
+- [ ] Add accessibility support
+
+### Phase 3: Polish
+- [ ] Add gradient borders to glass elements
+- [ ] Implement stagger animations on lists
+- [ ] Create skeleton loaders
+- [ ] Build empty state component
+- [ ] Add text glow to headings
+- [ ] Implement pull-to-refresh
+
+### Phase 4: Enhanced UX
+- [ ] Add long press interactions
+- [ ] Create progress indicators
+- [ ] Fine-tune animations
+- [ ] Performance testing
+- [ ] Accessibility audit
+- [ ] Cross-device testing
+
+---
+
+## Example Component Implementation Expectations
+
+### Example: GlassCard
+```typescript
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+
+interface GlassCardProps {
+  children: React.ReactNode;
+  blur?: 'light' | 'medium' | 'strong';
+  pressable?: boolean;
+  onPress?: () => void;
+  style?: ViewStyle;
+}
+
+const GlassCard: React.FC<GlassCardProps> = ({
+  children,
+  blur = 'medium',
+  pressable = false,
+  onPress,
+  style,
+}) => {
+  const [pressed, setPressed] = useState(false);
+  
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ 
+      scale: withTiming(pressed ? 0.95 : 1, { duration: 150 }) 
+    }],
+  }));
+  
+  const handlePressIn = () => {
+    setPressed(true);
+    if (pressable) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+  
+  const blurIntensity = {
+    light: 10,
+    medium: 20,
+    strong: 30,
+  }[blur];
+  
+  const Component = pressable ? Pressable : View;
+  
+  return (
+    <LinearGradient
+      colors={['rgba(99, 102, 241, 0.5)', 'rgba(139, 92, 246, 0.5)']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={[{ padding: 1, borderRadius: 20 }, style]}
+    >
+      <Animated.View style={animatedStyle}>
+        <Component
+          onPressIn={handlePressIn}
+          onPressOut={() => setPressed(false)}
+          onPress={onPress}
+        >
+          <BlurView intensity={blurIntensity} tint="light" style={styles.blur}>
+            <View style={styles.content}>
+              {children}
+            </View>
+          </BlurView>
+        </Component>
+      </Animated.View>
+    </LinearGradient>
+  );
+};
+```

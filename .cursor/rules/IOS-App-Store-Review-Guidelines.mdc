@@ -1,0 +1,1077 @@
+---
+alwaysApply: true
+---
+
+# Apple App Store Review Guidelines Compliance
+**Last Updated: November 2025**
+**Purpose: Ensure first-time App Store approval**
+
+---
+
+## CRITICAL: Before Submission Checklist
+
+### Demo Account & Testing Access
+```
+MUST PROVIDE in App Review Notes:
+- Active demo account credentials (username + password)
+- OR fully-featured demo mode (if login required for legal/security reasons)
+- Any special hardware requirements or setup instructions
+- Region-specific access details if applicable
+- Multiple role credentials if app has admin/user roles
+
+Location: App Store Connect → App Review Information → Notes
+```
+
+### Working Build Requirements
+```
+The reviewer MUST be able to:
+1. Launch app without crashes
+2. Complete primary user flow in under 60 seconds
+3. Verify all features mentioned in description
+4. Restore purchases (if applicable)
+5. Access privacy policy
+6. Delete account (if account creation exists)
+
+Test on clean device/simulator before submission
+```
+
+---
+
+## 1. SAFETY (Guideline Section 1)
+
+### 1.1 Objectionable Content
+**DON'T include:**
+- ❌ Pornographic or sexually explicit content
+- ❌ Content that exploits or sexualizes minors
+- ❌ Realistic portrayals of extreme violence or gore
+- ❌ Content that promotes hate speech, discrimination, terrorism
+- ❌ Harmful concepts that profit from recent tragedies/conflicts
+
+**Age-Appropriate Content (1.2.1a - NEW Nov 2025):**
+```javascript
+// If your app allows user-generated content
+contentModeration: {
+  // REQUIRED: Age verification/restriction system
+  ageGating: true,
+  
+  // REQUIRED: Content rating identification
+  contentLabeling: true,
+  
+  // Users must be able to identify content exceeding app's age rating
+  // Must restrict underage access to mature content
+}
+```
+
+### 1.2 User Generated Content
+**REQUIRED for UGC apps:**
+```javascript
+ugcRequirements: {
+  // 1. Content filtering/moderation system
+  moderationSystem: true,
+  
+  // 2. Reporting mechanism for objectionable content
+  reportingFeature: true,
+  
+  // 3. Ability to block abusive users
+  blockingFeature: true,
+  
+  // 4. Published contact info for support
+  supportContact: 'support@yourapp.com',
+  
+  // Display in: Settings, Help, or About screen
+}
+```
+
+### 1.3 Kids Category
+**If targeting children under 13:**
+- ❌ NO third-party advertising or analytics
+- ❌ NO links out of the app without parental gate
+- ❌ NO purchases without parental gate
+- ✅ Comply with COPPA and applicable privacy laws
+- ✅ Privacy policy specifically addressing children
+
+### 1.4 Physical Harm
+**DON'T create apps that:**
+- Encourage dangerous activities (drug use, excessive drinking)
+- Provide medical/health advice without disclaimer
+- Facilitate illegal activities
+
+**Medical/Health Apps Must:**
+```javascript
+healthAppRequirements: {
+  // Disclaimer that app is not medical advice
+  medicalDisclaimer: true,
+  
+  // Recommend consulting healthcare provider
+  providerRecommendation: true,
+  
+  // If collecting health data: explain why and how it's protected
+  healthDataDisclosure: true,
+}
+```
+
+### 1.5 Developer Information
+**MUST provide:**
+- Valid developer name in App Store Connect
+- Working contact email
+- Privacy policy URL
+- Support URL
+
+---
+
+## 2. PERFORMANCE (Guideline Section 2)
+
+### 2.1 App Completeness
+**CRITICAL - Top rejection reason:**
+```javascript
+appCompletenessRules: {
+  // ❌ NEVER submit app with placeholder content
+  placeholders: false,
+  
+  // ❌ NO "Coming Soon" features in description
+  comingSoonFeatures: false,
+  
+  // ❌ NO empty ad banners (removed in Nov 2025 update)
+  emptyAds: false,
+  
+  // ❌ NO broken links or missing content
+  brokenLinks: false,
+  
+  // ✅ All features in description must be functional
+  allFeaturesWork: true,
+  
+  // ✅ App must work on clean install without external dependencies
+  standaloneOperation: true,
+}
+```
+
+**Demo Mode (2.1 - Updated 2025):**
+```javascript
+// If you can't provide demo account for legal/security reasons:
+demoMode: {
+  // Must get prior approval from Apple
+  priorApproval: true,
+  
+  // Must exhibit full features and functionality
+  fullFeatured: true,
+  
+  // Put in App Review Notes
+  noteInReview: true,
+}
+```
+
+### 2.2 Beta Testing
+- ❌ DON'T submit beta/demo/trial versions to App Store
+- ✅ Use TestFlight for beta testing
+
+### 2.3 Accurate Metadata
+**CRITICAL - Common rejection reason:**
+```javascript
+metadataAccuracy: {
+  // Screenshots MUST match actual app UI
+  accurateScreenshots: true,
+  
+  // Description MUST match actual features
+  accurateDescription: true,
+  
+  // ❌ NO fake reviews or incentivized ratings
+  noFakeReviews: true,
+  
+  // ❌ NO misleading claims or comparisons
+  noMisleadingClaims: true,
+  
+  // ❌ NO unrelated keywords in title/subtitle
+  relevantKeywords: true,
+  
+  // App name/subtitle must be concise, not keyword-stuffed
+  conciseName: true,
+}
+```
+
+**Test by running "reviewer simulation":**
+1. Install on clean device
+2. Compare actual behavior to screenshots
+3. Verify every feature mentioned in description exists
+4. Check all metadata is accurate
+
+### 2.4 Hardware Compatibility
+```javascript
+hardwareRequirements: {
+  // Declare required hardware in Info.plist
+  requiredDeviceCapabilities: ['bluetooth', 'camera'],
+  
+  // App must gracefully handle missing hardware
+  gracefulDegradation: true,
+  
+  // Don't require hardware unless actually needed
+  justifiedRequirements: true,
+}
+```
+
+### 2.5 Software Requirements
+
+**No Private APIs (Critical):**
+```javascript
+// ❌ NEVER use private Apple APIs
+// ❌ NEVER use undocumented features
+// ✅ Only use public, documented APIs
+```
+
+**App Extensions:**
+```javascript
+extensions: {
+  // Extensions must relate to parent app
+  related: true,
+  
+  // ❌ NO ads in extensions, widgets, notifications, keyboards
+  noAdsInExtensions: true,
+  
+  // Widgets must use WidgetKit
+  widgetKit: true,
+}
+```
+
+---
+
+## 3. BUSINESS (Guideline Section 3)
+
+### 3.1.1 In-App Purchase - CRITICAL
+**This is THE most common rejection reason**
+```javascript
+iapRequirements: {
+  // MUST use IAP for digital goods/services consumed in-app
+  useIAP: true,
+  
+  digitalGoodsExamples: [
+    'Premium features',
+    'Virtual currency',
+    'Subscriptions to app content',
+    'Game levels/items',
+    'Digital content (books, videos, music)',
+  ],
+  
+  // MUST provide "Restore Purchases" button
+  restorePurchases: {
+    required: true,
+    location: 'Settings or Paywall screen',
+    forProductTypes: ['non-consumable', 'auto-renewable subscription'],
+  },
+  
+  // ❌ CANNOT bypass IAP with:
+  cannotBypass: [
+    'External payment links',
+    'References to external purchase methods',
+    'Buttons to external stores',
+    'Cryptocurrency payments for digital goods',
+  ],
+}
+```
+
+**Exceptions (DON'T need IAP):**
+- Physical goods/services (e.g., Uber, DoorDash)
+- Person-to-person payments (e.g., Venmo)
+- Content consumed outside the app (e.g., Kindle books read on Kindle)
+
+**US Storefront Update (May 2025):**
+```javascript
+// In US storefront only, you MAY include:
+usStorefrontAllowed: {
+  // External links to purchase (with disclosure)
+  externalLinks: true,
+  
+  // But still MUST offer IAP as option
+  iapRequired: true,
+  
+  // See Guidelines 3.1.1, 3.1.1(a), 3.1.3, 3.1.3(a)
+}
+```
+
+### 3.1.2 Subscriptions
+```javascript
+subscriptionRules: {
+  // Clear description of what user gets
+  clearDescription: true,
+  
+  // Duration and price clearly stated
+  pricingTransparency: true,
+  
+  // Auto-renewal terms visible before purchase
+  autoRenewalTerms: true,
+  
+  // Link to terms of service and privacy policy
+  legalLinks: true,
+  
+  // Must provide "Restore Purchases"
+  restorePurchases: true,
+  
+  // Manage subscriptions link
+  manageSubscriptions: 'Link to iOS subscription management',
+}
+```
+
+### 3.2.1 Acceptable Business Models
+```javascript
+// ✅ Allowed:
+acceptableModels: [
+  'Free with ads',
+  'Freemium with IAP',
+  'Paid upfront',
+  'Subscriptions',
+  'One-time unlock',
+]
+
+// ❌ NOT allowed:
+rejectedModels: [
+  'Loot boxes without odds disclosure',
+  'Predatory lending',
+  'Multi-level marketing',
+  'Cryptocurrency mining',
+]
+```
+
+### 3.2.2 Unacceptable Business Models
+
+**Loan Apps (Updated Nov 2025):**
+```javascript
+loanRestrictions: {
+  // Maximum APR: 36% (including all costs and fees)
+  maxAPR: 36,
+  
+  // Minimum repayment period: 60 days
+  minRepaymentDays: 60,
+  
+  // Applies to payday loans, cash advances, etc.
+}
+```
+
+---
+
+## 4. DESIGN (Guideline Section 4)
+
+### 4.1 Copycats - UPDATED NOV 2025
+**NEW Guideline 4.1(c):**
+```javascript
+brandingRules: {
+  // ❌ CANNOT use another developer's:
+  cannotCopy: {
+    icon: 'without approval',
+    brand: 'without approval',
+    productName: 'without approval',
+  },
+  
+  // ✅ Create original branding
+  original: {
+    uniqueIcon: true,
+    uniqueName: true,
+    uniqueUI: true,
+  },
+  
+  // Don't copy popular apps or make minor changes
+  noCopycats: true,
+  
+  // Don't impersonate other apps/services
+  noImpersonation: true,
+}
+```
+
+### 4.2 Minimum Functionality
+```javascript
+minimumFunctionality: {
+  // App must do more than:
+  tooSimple: [
+    'Just show website in WebView',
+    'Single button that does one thing',
+    'Static content that should be webpage',
+    'Collection of web links',
+  ],
+  
+  // Must provide rich, engaging experience
+  richExperience: true,
+  
+  // Take advantage of iOS capabilities
+  platformFeatures: true,
+}
+```
+
+### 4.3 Spam
+```javascript
+spamPrevention: {
+  // Don't submit multiple similar apps
+  uniqueApps: true,
+  
+  // Saturated categories (be careful):
+  saturatedCategories: [
+    'Fart apps',
+    'Flashlight apps',
+    'Fortune telling',
+    'Generic dating',
+    'Basic drinking games',
+  ],
+  
+  // If in saturated category, must be unique/high-quality
+  uniqueValue: true,
+}
+```
+
+### 4.7 Mini Apps, Mini Games, Streaming Games
+**Clarified Nov 2025:**
+```javascript
+miniAppsRules: {
+  // HTML5 and JavaScript mini apps ARE in scope
+  htmlJSInScope: true,
+  
+  // (4.7.2) Cannot extend/expose native APIs without permission
+  noNativeAPIs: true,
+  
+  // (4.7.5) Must provide age-gating for mature content
+  ageRestriction: true,
+  
+  // Cannot bypass App Store review through web-based apps
+  noReviewBypass: false,
+}
+```
+
+---
+
+## 5. LEGAL (Guideline Section 5)
+
+### 5.1.1 Privacy - CRITICAL
+**Top 3 rejection reason:**
+```javascript
+privacyRequirements: {
+  // 1. Privacy Policy REQUIRED
+  privacyPolicy: {
+    required: true,
+    
+    // Must be accessible:
+    locations: [
+      'App Store Connect metadata',
+      'In app (Settings/Help/About)',
+    ],
+    
+    // Must include:
+    mustInclude: [
+      'What data is collected',
+      'How data is used',
+      'Who data is shared with',
+      'How to delete data',
+      'Contact information',
+    ],
+  },
+  
+  // 2. Permission Requests
+  permissions: {
+    // MUST explain why BEFORE requesting
+    purposeStrings: {
+      NSLocationWhenInUseUsageDescription: 'We use your location to show nearby restaurants',
+      NSCameraUsageDescription: 'Camera is used to scan QR codes',
+      NSPhotoLibraryUsageDescription: 'Access photos to set profile picture',
+      // etc.
+    },
+    
+    // Must be specific and accurate
+    specificReasons: true,
+    
+    // Offer limited functionality if permission denied
+    gracefulDegradation: true,
+  },
+  
+  // 3. Third-Party Data Sharing (Updated 2025)
+  dataSharing: {
+    // MUST disclose where data is shared
+    disclosure: true,
+    
+    // NEW: If sharing with third-party AI - explicit permission required
+    thirdPartyAI: {
+      explicitConsent: true,
+      clearDisclosure: true,
+    },
+    
+    // Get permission BEFORE sharing
+    priorConsent: true,
+  },
+  
+  // 4. Data Collection (Updated 2025)
+  dataCollection: {
+    // Even MORE clarity required
+    clearExplanations: true,
+    
+    // Explain WHY each permission is needed
+    justification: true,
+    
+    // How data is used and stored
+    usageAndStorage: true,
+  },
+}
+```
+
+**AI Data Sharing (NEW 5.1.2i - Nov 2025):**
+```javascript
+aiDataSharing: {
+  // Must clearly disclose if sharing with third-party AI
+  disclosure: 'We share [specific data] with [AI provider] for [purpose]',
+  
+  // Must obtain explicit permission before sharing
+  explicitPermission: true,
+  
+  // Applies to AI training, processing, analysis
+}
+```
+
+**Highly Regulated Fields (Updated 5.1.1ix - Nov 2025):**
+```javascript
+regulatedFields: {
+  // If your app is in these categories:
+  categories: [
+    'Financial services',
+    'Medical/health',
+    'Professional services (legal, real estate)',
+    'Government services',
+    'Crypto exchanges', // ADDED Nov 2025
+  ],
+  
+  // Must provide additional documentation
+  documentation: true,
+  
+  // May require credentials, licenses, or compliance proof
+}
+```
+
+### 5.1.2 Data Use and Sharing
+```javascript
+dataUse: {
+  // Only collect data necessary for app functionality
+  minimumNecessary: true,
+  
+  // Don't sell user data without explicit consent
+  noSellingData: true,
+  
+  // Encryption for sensitive data
+  encryption: true,
+  
+  // Secure transmission (HTTPS)
+  httpsOnly: true,
+}
+```
+
+### 5.1.5 Location Services
+```javascript
+locationServices: {
+  // Use lowest accuracy necessary
+  minimumAccuracy: true,
+  
+  // Explain benefits to user
+  benefits: 'Location helps us show nearby events',
+  
+  // Don't require location unless essential
+  optional: true,
+}
+```
+
+### 5.2 Intellectual Property
+```javascript
+intellectualProperty: {
+  // You must own or license all content
+  ownership: true,
+  
+  // Don't use copyrighted content without permission
+  noCopyrightViolation: true,
+  
+  // Don't mislead about relationship with other brands
+  noFalseAffiliation: true,
+  
+  // Respect trademarks
+  respectTrademarks: true,
+}
+```
+
+---
+
+## 6. ACCOUNT DELETION (Critical)
+
+**Required if app supports account creation:**
+```javascript
+accountDeletion: {
+  // MUST provide in-app account deletion
+  inAppDeletion: true,
+  
+  // Location: Settings or Account Management
+  location: 'Easy to find',
+  
+  // ❌ CANNOT require emailing support
+  noEmailOnly: true,
+  
+  // ✅ MUST be initiated within the app
+  initiatedInApp: true,
+  
+  // Process can take time, but initiation must be in-app
+  initiationRequired: true,
+  
+  // See: Offering account deletion in your app
+}
+```
+
+---
+
+## 7. APP METADATA REQUIREMENTS
+
+### App Name
+```javascript
+appName: {
+  // Max 30 characters
+  maxLength: 30,
+  
+  // Must be simple, memorable
+  simple: true,
+  
+  // ❌ NO keyword stuffing
+  noKeywordStuffing: true,
+  
+  // ❌ NO prices, dates, or promotional text
+  noPromotional: true,
+}
+```
+
+### App Subtitle
+```javascript
+subtitle: {
+  // Max 30 characters
+  maxLength: 30,
+  
+  // Describe app functionality
+  descriptive: true,
+  
+  // ❌ NO keyword stuffing
+  noKeywordStuffing: true,
+}
+```
+
+### Screenshots
+```javascript
+screenshots: {
+  // MUST show actual app UI
+  actualUI: true,
+  
+  // MUST match current version
+  currentVersion: true,
+  
+  // ❌ NO fake/mockup UI
+  noMockups: true,
+  
+  // Can include text overlays explaining features
+  descriptiveText: 'OK',
+  
+  // Required sizes for each device type
+  requiredSizes: true,
+}
+```
+
+### App Description
+```javascript
+description: {
+  // Clearly explain what app does
+  clear: true,
+  
+  // Mention key features
+  keyFeatures: true,
+  
+  // ❌ NO misleading claims
+  accurate: true,
+  
+  // ❌ NO "best" claims without proof
+  noUnsubstantiatedClaims: true,
+}
+```
+
+### Keywords
+```javascript
+keywords: {
+  // Max 100 characters total
+  maxLength: 100,
+  
+  // Separate with commas
+  separator: ',',
+  
+  // Only relevant keywords
+  relevant: true,
+  
+  // ❌ NO competitor names
+  noCompetitors: true,
+  
+  // ❌ NO trademarked terms (unless yours)
+  noTrademarks: true,
+}
+```
+
+---
+
+## 8. APP REVIEW NOTES - CRITICAL
+
+**This section can make or break your submission:**
+```markdown
+## What to Include in App Review Notes:
+
+### Demo Credentials
+Username: demo@example.com
+Password: DemoPass123!
+
+### Special Instructions
+- App requires iOS location permission to function
+- Test with region set to "United States"
+- Premium features accessible via demo account
+
+### Feature Explanations
+- [Feature X] works by doing [Y]
+- To test [Z], navigate to Settings → [Menu]
+
+### Test Data
+- Use QR code: [attach image]
+- Sample data file: [link]
+
+### Backend/Server Info
+- All backend services are live and operational
+- API endpoints are production-ready
+
+### Third-Party Dependencies
+- Uses [SDK name] for [purpose]
+- Analytics: [provider name]
+- Advertising: [provider name]
+
+### Known Issues (if any)
+- [Issue] affects [devices] - fix coming in next version
+- Workaround: [solution]
+
+### Privacy/Compliance
+- Privacy policy: [URL]
+- Terms of service: [URL]
+- COPPA compliant (if applicable)
+- GDPR compliant (if applicable)
+
+### Contact for Questions
+- Email: appreview@yourcompany.com
+- Phone: +1-XXX-XXX-XXXX (optional)
+```
+
+---
+
+## 9. COMMON REJECTION REASONS & FIXES
+
+### Rejection: 2.1 - App Crashes or Bugs
+**Fix:**
+```javascript
+testing: {
+  // Test on multiple devices
+  devices: ['iPhone 12', 'iPhone 15 Pro', 'iPad Air'],
+  
+  // Test on multiple iOS versions
+  iosVersions: ['iOS 17', 'iOS 18'],
+  
+  // Test all user flows
+  completeFlows: true,
+  
+  // Test with poor network conditions
+  networkTesting: true,
+  
+  // Use TestFlight beta before submission
+  testFlight: true,
+}
+```
+
+### Rejection: 2.3 - Metadata Doesn't Match App
+**Fix:**
+```javascript
+metadataCheck: {
+  // Run through entire app
+  appWalkthrough: true,
+  
+  // List every feature in app
+  featureList: [],
+  
+  // Verify each feature in description exists
+  verifyDescriptionFeatures: true,
+  
+  // Update screenshots to current version
+  currentScreenshots: true,
+  
+  // Remove any "coming soon" language
+  noComingSoon: true,
+}
+```
+
+### Rejection: 3.1.1 - IAP Issues
+**Fix:**
+```javascript
+iapFix: {
+  // Add "Restore Purchases" button
+  restoreButton: {
+    location: 'Settings screen',
+    label: 'Restore Purchases',
+    functional: true,
+  },
+  
+  // Remove external payment links for digital goods
+  removeExternalPayments: true,
+  
+  // Use StoreKit for all digital purchases
+  useStoreKit: true,
+  
+  // Test purchase flow end-to-end
+  testPurchases: true,
+}
+```
+
+### Rejection: 4.3 - Spam or Low Quality
+**Fix:**
+```javascript
+qualityImprovement: {
+  // Add unique features
+  uniqueValue: 'What makes your app different?',
+  
+  // Improve UI/UX
+  polishedDesign: true,
+  
+  // Add more functionality
+  richFeatures: true,
+  
+  // If in saturated category, pivot or add innovation
+  innovation: true,
+}
+```
+
+### Rejection: 5.1.1 - Privacy Issues
+**Fix:**
+```javascript
+privacyFix: {
+  // Add privacy policy URL
+  privacyPolicyURL: 'https://yourapp.com/privacy',
+  
+  // Make it accessible in app (Settings)
+  inAppAccess: true,
+  
+  // Update purpose strings in Info.plist
+  purposeStrings: {
+    specific: true,
+    accurate: true,
+    userFriendly: true,
+  },
+  
+  // Add data deletion mechanism
+  dataDeletion: true,
+  
+  // Disclose third-party sharing
+  thirdPartyDisclosure: true,
+}
+```
+
+---
+
+## 10. SUBMISSION PREPARATION CHECKLIST
+```markdown
+## Before Hitting "Submit for Review":
+
+### Code & Build
+- [ ] App builds without errors/warnings
+- [ ] Tested on multiple devices (iPhone + iPad if universal)
+- [ ] Tested on iOS 17 and iOS 18
+- [ ] No crashes during normal usage
+- [ ] No private APIs used
+- [ ] All features functional
+- [ ] Backend services operational
+
+### Metadata
+- [ ] App name (max 30 chars, no keywords)
+- [ ] Subtitle (max 30 chars, descriptive)
+- [ ] Description accurate and complete
+- [ ] Keywords relevant (max 100 chars)
+- [ ] Screenshots match current UI
+- [ ] Screenshots for all required sizes
+- [ ] Privacy policy URL added
+- [ ] Support URL added
+- [ ] Marketing URL (if applicable)
+- [ ] Category appropriate
+- [ ] Age rating accurate
+
+### In-App Purchase (if applicable)
+- [ ] All IAPs created in App Store Connect
+- [ ] IAP descriptions clear
+- [ ] "Restore Purchases" button implemented
+- [ ] IAP tested with sandbox account
+- [ ] No external payment methods for digital goods
+
+### Privacy & Permissions
+- [ ] Privacy policy accessible in app
+- [ ] Purpose strings for all permissions
+- [ ] Permission explanations clear
+- [ ] Data collection justified
+- [ ] Third-party sharing disclosed
+- [ ] Account deletion available (if accounts exist)
+
+### App Review Information
+- [ ] Demo account credentials provided
+- [ ] Special instructions included
+- [ ] Contact information added
+- [ ] All features explained
+- [ ] Known issues documented (if any)
+
+### Legal
+- [ ] Terms of service available
+- [ ] Content is original or licensed
+- [ ] No copyrighted material used without permission
+- [ ] No trademark violations
+- [ ] COPPA compliant (if targeting kids)
+- [ ] GDPR compliant (if applicable)
+- [ ] Export compliance confirmed
+
+### Testing
+- [ ] Full app walkthrough completed
+- [ ] All user flows tested
+- [ ] Purchase flows tested
+- [ ] Account creation/deletion tested
+- [ ] Privacy policy accessible
+- [ ] All links working
+- [ ] Tested on clean device (fresh install)
+
+### Final Check
+- [ ] Version number incremented
+- [ ] Build number incremented
+- [ ] Release notes written
+- [ ] Pricing set correctly
+- [ ] Territories selected
+- [ ] Release date configured
+- [ ] App Store Connect status: "Ready for Review"
+```
+
+---
+
+## 11. QUICK REFERENCE: DO's and DON'Ts
+
+### DO:
+✅ Provide complete demo account
+✅ Test on clean device before submission
+✅ Make privacy policy easy to find
+✅ Use IAP for digital goods
+✅ Include "Restore Purchases"
+✅ Provide account deletion
+✅ Use accurate metadata
+✅ Include all required screenshots
+✅ Explain permissions clearly
+✅ Own or license all content
+✅ Create original branding
+✅ Test all user flows
+✅ Make app reviewer-proof
+
+### DON'T:
+❌ Submit with crashes or bugs
+❌ Use placeholder content
+❌ Mislead with metadata
+❌ Copy other apps' branding
+❌ Use private APIs
+❌ Include adult content without age gate
+❌ Bypass IAP for digital goods
+❌ Forget "Restore Purchases"
+❌ Hide privacy policy
+❌ Require email for account deletion
+❌ Use another developer's trademark
+❌ Submit spam or low-quality apps
+❌ Keyword stuff
+❌ Make false claims
+
+---
+
+## 12. AFTER REJECTION
+
+**If you get rejected:**
+```javascript
+rejectionResponse: {
+  // 1. Read rejection message carefully
+  understandIssue: true,
+  
+  // 2. Identify exact guideline violated
+  findGuideline: 'e.g., 2.3.10',
+  
+  // 3. Fix the issue
+  implementFix: true,
+  
+  // 4. Test fix thoroughly
+  testFix: true,
+  
+  // 5. Reply to reviewer
+  reviewerReply: {
+    // Explain what you changed
+    changes: 'Fixed [issue] by [solution]',
+    
+    // Where to test the fix
+    testingInstructions: 'To verify, navigate to [location]',
+    
+    // Be polite and professional
+    professional: true,
+    
+    // Don't argue - address the concern
+    noArguing: true,
+  },
+  
+  // 6. Resubmit
+  resubmit: true,
+}
+```
+
+---
+
+## 13. RESOURCES
+
+**Official Apple Documentation:**
+- App Store Review Guidelines: https://developer.apple.com/app-store/review/guidelines/
+- App Store Connect Help: https://developer.apple.com/help/app-store-connect/
+- Human Interface Guidelines: https://developer.apple.com/design/human-interface-guidelines/
+- Account Deletion: https://developer.apple.com/support/offering-account-deletion-in-your-app
+
+**Key Updates:**
+- November 2025: Copycat apps, loan restrictions, AI data sharing
+- May 2025: US storefront external links
+- Ongoing: Privacy enhancements, age rating enforcement
+
+---
+
+## FINAL REMINDERS
+```javascript
+finalChecklist: {
+  // The three most common rejections:
+  topRejections: [
+    '2.1 - App crashes/incomplete',
+    '2.3 - Inaccurate metadata',
+    '3.1.1 - IAP violations',
+  ],
+  
+  // Your job:
+  yourJob: {
+    // Make reviewer's job easy
+    easyReview: true,
+    
+    // Provide everything they need
+    completeInfo: true,
+    
+    // Be accurate and honest
+    honest: true,
+    
+    // Follow every guideline
+    compliant: true,
+  },
+  
+  // Remember:
+  remember: {
+    // Reviewer has 60 seconds to understand your app
+    quickUnderstanding: true,
+    
+    // If they can't test it, they'll reject it
+    testable: true,
+    
+    // Metadata must match reality
+    accurateMetadata: true,
+    
+    // Privacy is not optional
+    privacyRequired: true,
+  },
+}
+```
+
+**Good luck with your submission! 🚀**
