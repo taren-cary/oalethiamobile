@@ -57,6 +57,17 @@ export default function RootLayout() {
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
+              name="timeline/[id]"
+              options={{
+                headerShown: true,
+                title: 'Timeline',
+                headerBackTitle: 'Logs',
+                headerStyle: { backgroundColor: '#0a0a0f' },
+                headerTintColor: '#ffffff',
+                headerShadowVisible: false,
+              }}
+            />
+            <Stack.Screen
               name="modal"
               options={{ presentation: 'modal', title: 'Modal' }}
             />

@@ -152,43 +152,43 @@ Use this order; check off as you go. Reference: `_reference/frontend-react` and 
 
 **Home / Today** (`app/(tabs)/index.tsx`)
 
-- [ ] Background: keep `oalethiamobilebackground.jpg` full-screen.
-- [ ] **Streak** – Call `GET /api/profile` (or equivalent); show `stats.currentStreak` in a small glass card (e.g. "X day streak").
-- [ ] **Points + level** – Call `GET /api/user-points` and `GET /api/user-level`; show PointsLevelBadge (or compact points + level).
-- [ ] **Today's affirmation** – Determine active timeline (e.g. latest saved); call `GET /api/today-affirmation/:generationId` or use cached affirmations; render large AffirmationCard; on Affirm call `POST /api/affirm`; handle level-up event if returned.
-- [ ] **Active timeline preview** – If user has timelines: fetch latest (e.g. Supabase `action_timeline_generations`); show one glass card (goal, date, action count) with link to Timeline Detail or Logs.
-- [ ] **Empty / signed-out** – If not signed in: show reduced content or CTA to sign in; optional default affirmation message.
-- [ ] **Share** – AffirmationCard's Share opens Affirmation Share modal (or native share).
+- [x] Background: keep `oalethiamobilebackground.jpg` full-screen.
+- [x] **Streak** – Call `GET /api/profile` (or equivalent); show `stats.currentStreak` in a small glass card (e.g. "X day streak").
+- [x] **Points + level** – Call `GET /api/user-points` and `GET /api/user-level`; show PointsLevelBadge (or compact points + level).
+- [x] **Today's affirmation** – Determine active timeline (e.g. latest saved); call `GET /api/today-affirmation/:generationId` or use cached affirmations; render large AffirmationCard; on Affirm call `POST /api/affirm`; handle level-up event if returned.
+- [x] **Active timeline preview** – If user has timelines: fetch latest (e.g. Supabase `action_timeline_generations`); show one glass card (goal, date, action count) with link to Timeline Detail or Logs.
+- [x] **Empty / signed-out** – If not signed in: show reduced content or CTA to sign in; optional default affirmation message.
+- [x] **Share** – AffirmationCard's Share opens Affirmation Share modal (or native share).
 
 **Generate** (`app/(tabs)/generator.tsx`)
 
-- [ ] **Entry** – Generate tab shows a simple screen with a primary CTA (e.g. "Create timeline") that opens **Timeline Generation Form** modal (full-screen or modal presentation).
-- [ ] No need to duplicate full form on the tab; form lives in the modal.
+- [x] **Entry** – Generate tab shows a simple screen with a primary CTA (e.g. "Create timeline") that opens **Timeline Generation Form** modal (full-screen or modal presentation).
+- [x] No need to duplicate full form on the tab; form lives in the modal.
 
 **Logs / My Timelines** (`app/(tabs)/logs.tsx`)
 
-- [ ] **List** – Fetch from Supabase `action_timeline_generations` for `user_id`, order by `created_at` desc.
-- [ ] **Cards** – Each card: goal (outcome), date created, progress (if you add it); glass card; tap → push **Timeline Detail** (stack route).
-- [ ] **Empty state** – No timelines: empty state + CTA to open Generate / form modal.
-- [ ] **Delete** – Optional: delete timeline (Supabase delete + refresh list); confirm before delete.
+- [x] **List** – Fetch from Supabase `action_timeline_generations` for `user_id`, order by `created_at` desc.
+- [x] **Cards** – Each card: goal (outcome), date created, progress (if you add it); glass card; tap → push **Timeline Detail** (stack route).
+- [x] **Empty state** – No timelines: empty state + CTA to open Generate / form modal.
+- [x] **Delete** – Optional: delete timeline (Supabase delete + refresh list); confirm before delete.
 
 **Timeline Detail** (stack screen, e.g. `app/timeline/[id].tsx` or under Logs)
 
-- [ ] **Route** – Add stack route so Logs → tap card → Timeline Detail (no tab bar).
-- [ ] **Fetch** – Load timeline by id (Supabase or API); show loading then content.
-- [ ] **Content** – Outcome title; scrollable list of TimelineActionCard; today's AffirmationCard; progress (completed/skipped) persisted (e.g. AsyncStorage keyed by timeline id).
-- [ ] **Affirm** – Same as Home: confirm today's affirmation, `POST /api/affirm`, refresh points/level if needed.
-- [ ] **Share** – Share button opens Affirmation Share modal or native share.
-- [ ] **Back** – Back to Logs.
+- [x] **Route** – Add stack route so Logs → tap card → Timeline Detail (no tab bar).
+- [x] **Fetch** – Load timeline by id (Supabase or API); show loading then content.
+- [x] **Content** – Outcome title; scrollable list of TimelineActionCard; today's AffirmationCard; progress (completed/skipped) persisted (e.g. AsyncStorage keyed by timeline id).
+- [x] **Affirm** – Same as Home: confirm today's affirmation, `POST /api/affirm`, refresh points/level if needed.
+- [x] **Share** – Share button opens Affirmation Share modal or native share.
+- [x] **Back** – Back to Logs.
 
 **Profile** (`app/(tabs)/profile.tsx`)
 
-- [ ] **Points + level** – Same as Home: user-points + user-level; show PointsLevelBadge (or full LevelDisplay-style block).
-- [ ] **Streak** – Same as Home: `GET /api/profile` → show affirmation streak.
-- [ ] **Subscription status** – Call `GET /api/user-subscription`; show status (free/premium, credits if applicable).
-- [ ] **Settings** – Placeholder or minimal: notifications, account (per App Structure).
-- [ ] **Sign out** – Button calls auth `signOut`.
-- [ ] **Modals** – Buttons to open Auth Modal (sign in/up) and Subscription Modal (upgrade / buy credits).
+- [x] **Points + level** – Same as Home: user-points + user-level; show PointsLevelBadge (or full LevelDisplay-style block).
+- [x] **Streak** – Same as Home: `GET /api/profile` → show affirmation streak.
+- [x] **Subscription status** – Call `GET /api/user-subscription`; show status (free/premium, credits if applicable).
+- [x] **Settings** – Placeholder or minimal: notifications, account (per App Structure).
+- [x] **Sign out** – Button calls auth `signOut`.
+- [x] **Modals** – Buttons to open Auth Modal (sign in/up) and Subscription Modal (upgrade / buy credits).
 
 ### **Phase 4: Modals / overlays**
 
