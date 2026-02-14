@@ -133,11 +133,11 @@ Use this order; check off as you go. Reference: `_reference/frontend-react` and 
 
 ### **Phase 1: Foundation**
 
-- [ ] **Supabase client** – Add `lib/supabase.ts` (or equivalent) with env-based URL and anon key; use same tables as reference (RLS unchanged).
-- [ ] **API base** – Add `EXPO_PUBLIC_API_URL` (or similar) and ensure all API calls use `Authorization: Bearer <session.access_token>`.
-- [ ] **Auth context** – Port auth from `contexts/AuthContext.tsx`: `user`, `session`, `loading`, `signIn`, `signUp`, `signOut`; persist session via Supabase.
-- [ ] **Auth provider** – Wrap app (e.g. in `_layout.tsx`) with AuthProvider so all screens can use auth.
-- [ ] **Safe area** – Use `useSafeAreaInsets` and/or SafeAreaView for screens and modals (per glassmorphism rules).
+- [x] **Supabase client** – Add `lib/supabase.ts` (or equivalent) with env-based URL and anon key; use same tables as reference (RLS unchanged).
+- [x] **API base** – Add `EXPO_PUBLIC_API_URL` (or similar) and ensure all API calls use `Authorization: Bearer <session.access_token>`.
+- [x] **Auth context** – Port auth from `contexts/AuthContext.tsx`: `user`, `session`, `loading`, `signIn`, `signUp`, `signOut`; persist session via Supabase.
+- [x] **Auth provider** – Wrap app (e.g. in `_layout.tsx`) with AuthProvider so all screens can use auth.
+- [x] **Safe area** – Use `useSafeAreaInsets` and/or SafeAreaView for screens and modals (per glassmorphism rules).
 
 ### **Phase 2: Reusable components (glass + haptics)**
 
