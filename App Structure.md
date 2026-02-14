@@ -141,12 +141,12 @@ Use this order; check off as you go. Reference: `_reference/frontend-react` and 
 
 ### **Phase 2: Reusable components (glass + haptics)**
 
-- [ ] **GlassContainer / GlassCard** – If not done: BlurView, gradient border option, press states, haptic on press (per Glassmorphism rules).
-- [ ] **AffirmationCard** – Reusable card: title ("Today's cosmic affirmation"), date, quote text, Affirm button, optional Share. Props: `text`, `date`, `affirmed`, `onAffirm`, `onShare`. Use GlassCard, Orbitron/Inter, haptic.
-- [ ] **TimelineActionCard** – One card per action: date badge, action text, transit, optional expand (strategy/links), checkbox (complete), optional skip. Glass card; optional stagger animation.
-- [ ] **PointsLevelBadge** – Level number + name, optional progress bar (gradient), optional badge asset. Data from `GET /api/user-level`. Glass container.
-- [ ] **Share button** – Reusable: opens Affirmation Share modal or triggers native share (e.g. `expo-sharing`) with affirmation text/image. Haptic on press.
-- [ ] **Bottom tab circles** – Already implemented; confirm tab order: Home, Generate, Logs, Profile (per navigation structure).
+- [x] **GlassContainer / GlassCard** – If not done: BlurView, gradient border option, press states, haptic on press (per Glassmorphism rules).
+- [x] **AffirmationCard** – Reusable card: title ("Today's cosmic affirmation"), date, quote text, Affirm button, optional Share. Props: `text`, `date`, `affirmed`, `onAffirm`, `onShare`. Use GlassCard, Orbitron/Inter, haptic.
+- [x] **TimelineActionCard** – One card per action: date badge, action text, transit, optional expand (strategy/links), checkbox (complete), optional skip. Glass card; optional stagger animation.
+- [x] **PointsLevelBadge** – Level number + name, optional progress bar (gradient), optional badge asset. Data from `GET /api/user-level`. Glass container.
+- [x] **Share button** – Reusable: opens Affirmation Share modal or triggers native share (e.g. `expo-sharing`) with affirmation text/image. Haptic on press.
+- [x] **Bottom tab circles** – Already implemented; confirm tab order: Home, Generate, Logs, Profile (per navigation structure).
 
 ### **Phase 3: Main screens**
 

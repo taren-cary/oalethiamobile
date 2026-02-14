@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CircularNavButton } from './CircularNavButton';
 
+// Tab order per App Structure: Home → Generate → Logs → Profile (4 tabs)
 const TAB_ROUTES = [
   {
     route: '/(tabs)' as const,
