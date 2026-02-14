@@ -194,41 +194,41 @@ Use this order; check off as you go. Reference: `_reference/frontend-react` and 
 
 **Timeline Generation Form modal**
 
-- [ ] **Open from** – Generate tab (e.g. "Create timeline" button).
-- [ ] **Form fields** – Outcome, context, timeframe, approach (conservative/balanced/aggressive); birth date, birth time, location (geocode or Expo Location); load/save from `birth_charts` if user logged in.
-- [ ] **Validation** – Same as reference HeroSection; show errors in glass UI.
-- [ ] **Credits / subscription** – If user: check credits/subscription before generate; optional gating or upsell. If anonymous: optional anonymous-credits flow or require sign-in.
-- [ ] **Submit** – "Generate" button (GlassButton, haptic) → call `POST /api/generate-timeline` (or anonymous endpoint); on success close form and open **Timeline Results** modal with response data.
-- [ ] **Styling** – Glass inputs, BlurView, cosmic colors; typography Orbitron/Inter.
+- [x] **Open from** – Generate tab (e.g. "Create timeline" button).
+- [x] **Form fields** – Outcome, context, timeframe, approach (conservative/balanced/aggressive); birth date, birth time, location (geocode or Expo Location); load/save from `birth_charts` if user logged in.
+- [x] **Validation** – Same as reference HeroSection; show errors in glass UI.
+- [x] **Credits / subscription** – If user: check credits/subscription before generate; optional gating or upsell. If anonymous: optional anonymous-credits flow or require sign-in.
+- [x] **Submit** – "Generate" button (GlassButton, haptic) → call `POST /api/generate-timeline` (or anonymous endpoint); on success close form and open **Timeline Results** modal with response data.
+- [x] **Styling** – Glass inputs, BlurView, cosmic colors; typography Orbitron/Inter.
 
 **Timeline Results modal**
 
-- [ ] **Open after** – Generation form succeeds; receive generation payload (outcome, actions, timeline_affirmations, etc.).
-- [ ] **Content** – Outcome summary; list of actions (TimelineActionCard); today's AffirmationCard; "Save timeline" button.
-- [ ] **Save** – Insert into Supabase `action_timeline_generations` (+ optional `daily_affirmations` for next 30 days); then show success and optionally close or go to Logs.
-- [ ] **Affirm** – Same flow: confirm → `POST /api/affirm`; handle points/level-up (e.g. level-up modal).
-- [ ] **Close** – Dismiss modal; optional "View in Logs" CTA.
+- [x] **Open after** – Generation form succeeds; receive generation payload (outcome, actions, timeline_affirmations, etc.).
+- [x] **Content** – Outcome summary; list of actions (TimelineActionCard); today's AffirmationCard; "Save timeline" button.
+- [x] **Save** – Insert into Supabase `action_timeline_generations` (+ optional `daily_affirmations` for next 30 days); then show success and optionally close or go to Logs.
+- [x] **Affirm** – Same flow: confirm → `POST /api/affirm`; handle points/level-up (e.g. level-up modal).
+- [x] **Close** – Dismiss modal; optional "View in Logs" CTA.
 
 **Affirmation Share modal**
 
-- [ ] **Open from** – AffirmationCard Share (Home, Timeline Detail, or Results).
-- [ ] **Content** – Affirmation text; optional generated image (e.g. view shot or simple card layout).
-- [ ] **Actions** – Share via `expo-sharing` or React Native Share (Instagram, Save, etc.); optional backend "points per share" call if you add it.
-- [ ] **Dismiss** – Close modal after share or cancel.
+- [x] **Open from** – AffirmationCard Share (Home, Timeline Detail, or Results).
+- [x] **Content** – Affirmation text; optional generated image (e.g. view shot or simple card layout).
+- [x] **Actions** – Share via `expo-sharing` or React Native Share (Instagram, Save, etc.); optional backend "points per share" call if you add it.
+- [x] **Dismiss** – Close modal after share or cancel.
 
 **Auth modal**
 
-- [ ] **Port** – From `AuthModal.tsx`: sign in / sign up mode, email, password, username (signup), validation, errors.
-- [ ] **Open from** – Profile (and when needed, e.g. gated actions).
-- [ ] **Submit** – Use AuthContext `signIn` / `signUp`; on success close modal.
-- [ ] **Styling** – Modal + glass inputs; haptic on submit.
+- [x] **Port** – From `AuthModal.tsx`: sign in / sign up mode, email, password, username (signup), validation, errors.
+- [x] **Open from** – Profile (and when needed, e.g. gated actions).
+- [x] **Submit** – Use AuthContext `signIn` / `signUp`; on success close modal.
+- [x] **Styling** – Modal + glass inputs; haptic on submit.
 
 **Subscription modal**
 
-- [ ] **Port** – From `SubscriptionModal.tsx`: type = subscription | credits; call create-checkout-session or create-credits-checkout; redirect to Stripe (e.g. WebBrowser or in-app browser).
-- [ ] **Open from** – Profile (Upgrade / Buy credits).
-- [ ] **Return** – Handle deep link or return URL; refresh subscription/credits (event or refetch).
-- [ ] **Styling** – Glass modal; error handling per reference.
+- [x] **Port** – From `SubscriptionModal.tsx`: type = subscription | credits; call create-checkout-session or create-credits-checkout; redirect to Stripe (e.g. WebBrowser or in-app browser).
+- [x] **Open from** – Profile (Upgrade / Buy credits).
+- [x] **Return** – Handle deep link or return URL; refresh subscription/credits (event or refetch).
+- [x] **Styling** – Glass modal; error handling per reference.
 
 ### **Phase 5: Navigation & routing**
 

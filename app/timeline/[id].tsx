@@ -1,4 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useShare } from '@/contexts/ShareContext';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -39,6 +40,7 @@ export default function TimelineDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
+  const { setShare } = useShare();
 
   const [timeline, setTimeline] = useState<SavedTimeline | null>(null);
   const [loading, setLoading] = useState(true);
@@ -248,7 +250,10 @@ export default function TimelineDetailScreen() {
             date={todayFormatted}
             affirmed={affirmed}
             onAffirm={handleAffirm}
-            onShare={() => {}}
+            onShare={() => {
+              setShare(affirmationText, "Today's cosmic affirmation");
+              router.push({ pathname: '/modal', params: { type: 'share' } });
+            }}
           />
           <View style={styles.shareRow}>
             <ShareButton

@@ -17,6 +17,8 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/contexts/AuthContext';
+import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
+import { ShareProvider } from '@/contexts/ShareContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 SplashScreen.preventAutoHideAsync();
@@ -54,7 +56,9 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AuthProvider>
-          <Stack>
+          <GenerationResultProvider>
+            <ShareProvider>
+              <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="timeline/[id]"
@@ -69,10 +73,12 @@ export default function RootLayout() {
             />
             <Stack.Screen
               name="modal"
-              options={{ presentation: 'modal', title: 'Modal' }}
+              options={{ presentation: 'modal', headerShown: false }}
             />
-          </Stack>
-          <StatusBar style="light" />
+              </Stack>
+              <StatusBar style="light" />
+            </ShareProvider>
+          </GenerationResultProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

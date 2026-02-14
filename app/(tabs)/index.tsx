@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
+import { useShare } from '@/contexts/ShareContext';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -29,6 +29,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
+  const { setShare } = useShare();
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [levelLoading, setLevelLoading] = useState(true);
@@ -218,7 +219,7 @@ export default function HomeScreen() {
             </Text>
             <GlassButton
               title="Sign in"
-              onPress={() => router.push('/modal')}
+              onPress={() => router.push({ pathname: '/modal', params: { type: 'auth' } })}
               accessibilityLabel="Sign in to your account"
             />
           </GlassCard>
@@ -274,10 +275,8 @@ export default function HomeScreen() {
           affirmed={affirmed}
           onAffirm={handleAffirm}
           onShare={() => {
-            Share.share({
-              message: affirmationText,
-              title: "Today's cosmic affirmation",
-            });
+            setShare(affirmationText, "Today's cosmic affirmation");
+            router.push({ pathname: '/modal', params: { type: 'share' } });
           }}
         />
 

@@ -126,11 +126,11 @@ export default function ProfileScreen() {
           <Text style={styles.title}>Profile</Text>
           <GlassCard>
             <Text style={styles.body}>Sign in to view your profile, streak, and subscription.</Text>
-            <GlassButton
-              title="Sign in"
-              onPress={() => router.push('/modal')}
-              accessibilityLabel="Sign in"
-            />
+          <GlassButton
+            title="Sign in"
+            onPress={() => router.push({ pathname: '/modal', params: { type: 'auth' } })}
+            accessibilityLabel="Sign in"
+          />
           </GlassCard>
         </ScrollView>
       </View>
@@ -193,11 +193,18 @@ export default function ProfileScreen() {
         </GlassCard>
 
         <GlassButton
-          title="Upgrade / Buy credits"
-          onPress={() => router.push('/modal')}
+          title="Upgrade"
+          onPress={() => router.push({ pathname: '/modal', params: { type: 'subscription' } })}
           variant="secondary"
           style={styles.button}
-          accessibilityLabel="Open subscription or credits modal"
+          accessibilityLabel="Upgrade to Premium"
+        />
+        <GlassButton
+          title="Buy credits"
+          onPress={() => router.push({ pathname: '/modal', params: { type: 'credits' } })}
+          variant="secondary"
+          style={styles.button}
+          accessibilityLabel="Buy credits"
         />
         <GlassButton
           title="Sign out"

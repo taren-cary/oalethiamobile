@@ -30,7 +30,7 @@ export default function GeneratorScreen() {
       >
         <GlassButton
           title="Create timeline"
-          onPress={() => router.push('/modal')}
+          onPress={() => router.push({ pathname: '/modal', params: { type: 'create-timeline' } })}
           style={styles.cta}
           accessibilityLabel="Create a new timeline"
           accessibilityHint="Opens the timeline creation form"

@@ -140,7 +140,7 @@ export default function LogsScreen() {
             title="Sign in to view timelines"
             description="Create an account or sign in to save and access your cosmic action plans."
             actionLabel="Sign in"
-            onAction={() => router.push('/modal')}
+            onAction={() => router.push({ pathname: '/modal', params: { type: 'auth' } })}
           />
         </View>
       </View>

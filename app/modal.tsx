@@ -1,29 +1,40 @@
-import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import {
+  AuthModalContent,
+  CreateTimelineModalContent,
+  ResultsModalContent,
+  ShareModalContent,
+  SubscriptionModalContent,
+} from '@/components/modals';
+import { glassColors } from '@/theme';
+
+type ModalType = 'auth' | 'subscription' | 'credits' | 'share' | 'create-timeline' | 'results';
 
 export default function ModalScreen() {
+  const params = useLocalSearchParams<{ type?: string }>();
+  const type = (params.type ?? 'auth') as ModalType;
+
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText type="title">This is a modal</ThemedText>
-      <Link href="/" dismissTo style={styles.link}>
-        <ThemedText type="link">Go to home screen</ThemedText>
-      </Link>
-    </ThemedView>
+    <View style={styles.container}>
+      {type === 'auth' && <AuthModalContent />}
+      {type === 'subscription' && <SubscriptionModalContent type="subscription" />}
+      {type === 'credits' && <SubscriptionModalContent type="credits" />}
+      {type === 'share' && <ShareModalContent />}
+      {type === 'create-timeline' && <CreateTimelineModalContent />}
+      {type === 'results' && <ResultsModalContent />}
+      {!['auth', 'subscription', 'credits', 'share', 'create-timeline', 'results'].includes(type) && (
+        <AuthModalContent />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+    backgroundColor: glassColors.background.primary,
   },
 });
