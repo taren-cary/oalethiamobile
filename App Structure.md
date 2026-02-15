@@ -232,10 +232,10 @@ Use this order; check off as you go. Reference: `_reference/frontend-react` and 
 
 ### **Phase 5: Navigation & routing**
 
-- [ ] **Tabs** – Confirm 4 tabs: Home, Generate, Logs, Profile (order and labels match App Structure).
-- [ ] **Timeline Detail** – Add stack route (e.g. `app/timeline/[id].tsx` or `app/(tabs)/logs/timeline/[id].tsx`); open from Logs on card tap; hide tab bar on this screen.
-- [ ] **Modals** – Use Expo Router modals or stack with `presentation: 'modal'` for: Timeline Form, Timeline Results, Affirmation Share, Auth, Subscription so tab bar is hidden when modal is open.
-- [ ] **Deep links** – Optional: Stripe return URL / success for subscription and credits.
+- [x] **Tabs** – Confirm 4 tabs: Home, Generate, Logs, Profile (order and labels match App Structure).
+- [x] **Timeline Detail** – Stack route at `app/timeline/[id].tsx`; opened from Logs on card tap; tab bar hidden (screen is in root Stack).
+- [x] **Modals** – Single modal route `app/modal.tsx` with `presentation: 'modal'`; type param drives: Timeline Form, Results, Affirmation Share, Auth, Subscription; tab bar hidden when modal is open.
+- [x] **Deep links** – Stripe return handling: `useStripeReturnUrl` in root layout listens for `?success=true`, `?credits=true`, `?portal=returned` and navigates to Profile; backend should redirect to `oalethiamobile://?success=true` (or credits/portal) for mobile clients.
 
 ### **Phase 6: Level-up & polish**
 

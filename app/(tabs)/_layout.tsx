@@ -3,8 +3,11 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { BottomNavigation } from '@/components/navigation/BottomNavigation';
+import { useStripeReturnUrl } from '@/hooks/use-stripe-return-url';
 
 export default function TabLayout() {
+  useStripeReturnUrl();
+
   return (
     <View style={styles.root}>
       <Tabs
@@ -15,7 +18,7 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen name="index" options={{ title: 'Home' }} />
-        <Tabs.Screen name="generator" options={{ title: 'Generator' }} />
+        <Tabs.Screen name="generator" options={{ title: 'Generate' }} />
         <Tabs.Screen name="logs" options={{ title: 'Logs' }} />
         <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
       </Tabs>
