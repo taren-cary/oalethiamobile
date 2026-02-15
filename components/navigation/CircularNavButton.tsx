@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -15,14 +15,26 @@ interface CircularNavButtonProps {
   isActive: boolean;
   onPress: () => void;
   children?: ReactNode;
+  accessibilityLabel: string;
 }
 
-export function CircularNavButton({ isActive, onPress, children }: CircularNavButtonProps) {
+export function CircularNavButton({
+  isActive,
+  onPress,
+  children,
+  accessibilityLabel,
+}: CircularNavButtonProps) {
   const scale = useSharedValue(isActive ? 1.1 : 1);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
-    scale.value = withTiming(isActive ? 1.1 : 1, { duration: 200 });
-  }, [isActive, scale]);
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
+
+  useEffect(() => {
+    const duration = reduceMotion ? 0 : 200;
+    scale.value = withTiming(isActive ? 1.1 : 1, { duration });
+  }, [isActive, scale, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -30,11 +42,11 @@ export function CircularNavButton({ isActive, onPress, children }: CircularNavBu
 
   const handlePressIn = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    scale.value = withTiming(1.05, { duration: 150 });
+    if (!reduceMotion) scale.value = withTiming(1.05, { duration: 150 });
   };
 
   const handlePressOut = () => {
-    scale.value = withTiming(isActive ? 1.1 : 1, { duration: 150 });
+    if (!reduceMotion) scale.value = withTiming(isActive ? 1.1 : 1, { duration: 150 });
   };
 
   return (
@@ -44,7 +56,9 @@ export function CircularNavButton({ isActive, onPress, children }: CircularNavBu
       onPressOut={handlePressOut}
       style={[styles.outer, animatedStyle]}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: isActive }}
+      accessibilityHint={isActive ? undefined : 'Double tap to switch tab'}
     >
       <View style={[styles.circleWrapper, isActive && styles.circleActive]}>
         <BlurView intensity={20} tint="light" style={StyleSheet.absoluteFill} />

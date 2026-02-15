@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GlassButton, GlassCard, GlassTextInput } from '@/components/glass';
+import { GlassButton, GlassTextInput } from '@/components/glass';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { glassBorderRadius, glassColors, glassSpacing, glassTypography } from '@/theme';
 
 const USERNAME_MIN = 3;
@@ -22,7 +23,7 @@ const PASSWORD_MIN = 6;
 export function AuthModalContent() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { signIn, signUp } = useAuth();
+  const { user, signIn, signUp } = useAuth();
 
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
@@ -31,6 +32,7 @@ export function AuthModalContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const pendingPostAuth = useRef(false);
 
   const handleSubmit = useCallback(async () => {
     setLoading(true);
@@ -64,7 +66,7 @@ export function AuthModalContent() {
           return;
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        pendingPostAuth.current = true;
         setEmail('');
         setPassword('');
         setUsername('');
@@ -76,7 +78,7 @@ export function AuthModalContent() {
           return;
         }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
+        pendingPostAuth.current = true;
         setEmail('');
         setPassword('');
       }
@@ -86,6 +88,35 @@ export function AuthModalContent() {
       setLoading(false);
     }
   }, [mode, email, password, username, signIn, signUp, router]);
+
+  useEffect(() => {
+    if (!user || !pendingPostAuth.current) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('birth_charts')
+          .select('birth_date, birth_time, location')
+          .eq('user_id', user.id)
+          .single();
+        const isFirstTime = !data || !data.birth_date || !data.location;
+        if (cancelled) return;
+        pendingPostAuth.current = false;
+        router.back();
+        if (isFirstTime) {
+          setTimeout(() => {
+            router.push({ pathname: '/modal', params: { type: 'welcome' } });
+          }, 300);
+        }
+      } catch {
+        if (!cancelled) {
+          pendingPostAuth.current = false;
+          router.back();
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, router]);
 
   const toggleMode = useCallback(() => {
     Haptics.selectionAsync();

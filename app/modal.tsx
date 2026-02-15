@@ -8,10 +8,18 @@ import {
   ResultsModalContent,
   ShareModalContent,
   SubscriptionModalContent,
+  WelcomeModalContent,
 } from '@/components/modals';
 import { glassColors } from '@/theme';
 
-type ModalType = 'auth' | 'subscription' | 'credits' | 'share' | 'create-timeline' | 'results';
+type ModalType =
+  | 'auth'
+  | 'subscription'
+  | 'credits'
+  | 'share'
+  | 'create-timeline'
+  | 'results'
+  | 'welcome';
 
 export default function ModalScreen() {
   const params = useLocalSearchParams<{ type?: string }>();
@@ -25,7 +33,8 @@ export default function ModalScreen() {
       {type === 'share' && <ShareModalContent />}
       {type === 'create-timeline' && <CreateTimelineModalContent />}
       {type === 'results' && <ResultsModalContent />}
-      {!['auth', 'subscription', 'credits', 'share', 'create-timeline', 'results'].includes(type) && (
+      {type === 'welcome' && <WelcomeModalContent />}
+      {!['auth', 'subscription', 'credits', 'share', 'create-timeline', 'results', 'welcome'].includes(type) && (
         <AuthModalContent />
       )}
     </View>

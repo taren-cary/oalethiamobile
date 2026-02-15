@@ -14,6 +14,7 @@ import { GlassButton, GlassCard } from '@/components/glass';
 import { PointsLevelBadge } from '@/components/points-level-badge';
 import type { LevelData } from '@/components/points-level-badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet } from '@/lib/api';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
 
@@ -21,6 +22,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user, session, signOut } = useAuth();
+  const { invalidateAt } = usePointsRefresh();
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [levelLoading, setLevelLoading] = useState(true);
@@ -102,6 +104,13 @@ export default function ProfileScreen() {
     fetchLevel();
     fetchSubscription();
   }, [fetchProfile, fetchLevel, fetchSubscription]);
+
+  useEffect(() => {
+    if (invalidateAt > 0) {
+      fetchLevel();
+      fetchProfile();
+    }
+  }, [invalidateAt, fetchLevel, fetchProfile]);
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;

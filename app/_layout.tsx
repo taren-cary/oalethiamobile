@@ -18,7 +18,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
+import { LevelUpProvider } from '@/contexts/LevelUpContext';
+import { PointsRefreshProvider } from '@/contexts/PointsRefreshContext';
 import { ShareProvider } from '@/contexts/ShareContext';
+import { LevelUpModalContent } from '@/components/modals/LevelUpModalContent';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 SplashScreen.preventAutoHideAsync();
@@ -56,9 +59,11 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AuthProvider>
-          <GenerationResultProvider>
-            <ShareProvider>
-              <Stack>
+          <PointsRefreshProvider>
+            <LevelUpProvider>
+              <GenerationResultProvider>
+                <ShareProvider>
+                  <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen
               name="timeline/[id]"
@@ -75,10 +80,13 @@ export default function RootLayout() {
               name="modal"
               options={{ presentation: 'modal', headerShown: false }}
             />
-              </Stack>
-              <StatusBar style="light" />
-            </ShareProvider>
-          </GenerationResultProvider>
+                  </Stack>
+                  <LevelUpModalContent />
+                  <StatusBar style="light" />
+                </ShareProvider>
+              </GenerationResultProvider>
+            </LevelUpProvider>
+          </PointsRefreshProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

@@ -12,24 +12,28 @@ const TAB_ROUTES = [
     segment: 'index',
     activeIcon: 'planet',
     inactiveIcon: 'planet-outline',
+    label: 'Home',
   },
   {
     route: '/(tabs)/generator' as const,
     segment: 'generator',
     activeIcon: 'sparkles',
     inactiveIcon: 'sparkles-outline',
+    label: 'Generate',
   },
   {
     route: '/(tabs)/logs' as const,
     segment: 'logs',
     activeIcon: 'document-text',
     inactiveIcon: 'document-text-outline',
+    label: 'Logs',
   },
   {
     route: '/(tabs)/profile' as const,
     segment: 'profile',
     activeIcon: 'person-circle',
     inactiveIcon: 'person-circle-outline',
+    label: 'Profile',
   },
 ] as const;
 
@@ -53,7 +57,7 @@ export function BottomNavigation() {
       ]}
       pointerEvents="box-none"
     >
-      {TAB_ROUTES.map(({ route, segment, activeIcon, inactiveIcon }) => {
+      {TAB_ROUTES.map(({ route, segment, activeIcon, inactiveIcon, label }) => {
         const active = isActive(route, segment);
 
         return (
@@ -61,6 +65,7 @@ export function BottomNavigation() {
             key={segment}
             isActive={active}
             onPress={() => router.push(route)}
+            accessibilityLabel={label}
           >
             <Ionicons
               name={active ? activeIcon : inactiveIcon}

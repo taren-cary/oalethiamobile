@@ -17,6 +17,8 @@ import { GlassButton, GlassCard } from '@/components/glass';
 import { PointsLevelBadge } from '@/components/points-level-badge';
 import type { LevelData } from '@/components/points-level-badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLevelUp } from '@/contexts/LevelUpContext';
+import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline } from '@/types/timeline';
@@ -30,6 +32,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { setShare } = useShare();
+  const { setLevelUp } = useLevelUp();
+  const { invalidate, invalidateAt } = usePointsRefresh();
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [levelLoading, setLevelLoading] = useState(true);
@@ -140,6 +144,13 @@ export default function HomeScreen() {
   }, [fetchProfile, fetchLevel, fetchLatestTimeline]);
 
   useEffect(() => {
+    if (invalidateAt > 0) {
+      fetchLevel();
+      fetchProfile();
+    }
+  }, [invalidateAt, fetchLevel, fetchProfile]);
+
+  useEffect(() => {
     fetchTodayAffirmation();
   }, [fetchTodayAffirmation]);
 
@@ -162,9 +173,13 @@ export default function HomeScreen() {
       if (res.ok) {
         const data = await res.json();
         if (data.levelUp) {
-          fetchLevel();
+          setLevelUp({
+            newLevel: data.levelUp.newLevel,
+            levelName: data.levelUp.levelName,
+            previousLevel: data.levelUp.previousLevel,
+          });
         }
-        fetchProfile();
+        invalidate();
       }
     } catch {
       // keep affirmed locally
@@ -177,8 +192,8 @@ export default function HomeScreen() {
     affirmationIndex,
     affirmationText,
     affirmLoading,
-    fetchLevel,
-    fetchProfile,
+    setLevelUp,
+    invalidate,
   ]);
 
   const todayFormatted = new Date().toLocaleDateString('en-US', {

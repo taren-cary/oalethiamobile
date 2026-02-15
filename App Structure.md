@@ -239,11 +239,11 @@ Use this order; check off as you go. Reference: `_reference/frontend-react` and 
 
 ### **Phase 6: Level-up & polish**
 
-- [ ] **Level-up modal** – When `POST /api/affirm` returns `levelUp`, show modal (port idea from `LevelUpModal.tsx`): new level, level name, badge image; "Continue" to dismiss; optional confetti/simple animation.
-- [ ] **Points refresh** – After affirm (and level-up), refresh user-points and user-level (e.g. context, event, or refetch) so Home and Profile stay in sync.
-- [ ] **Welcome / onboarding** – If first-time user (no or incomplete `birth_charts`): after signup/signin show Welcome modal (birth date, time, location) and save to `birth_charts`; port logic from `WelcomeModal.tsx` and AuthContext `isFirstTimeUser`.
-- [ ] **Accessibility** – Accessible labels, min touch targets 44pt, reduced motion (per rules).
-- [ ] **Loading & errors** – Skeleton or loading states for async screens; error messages in glass UI where needed.
+- [x] **Level-up modal** – When `POST /api/affirm` returns `levelUp`, `LevelUpContext` + `LevelUpModalContent` show overlay: new level, level name, badge placeholder; "Continue" dismisses and triggers points refresh; reduced motion supported.
+- [x] **Points refresh** – `PointsRefreshContext` invalidates on affirm; Home and Profile refetch level/profile when `invalidateAt` changes so they stay in sync.
+- [x] **Welcome / onboarding** – After sign in/up, if no or incomplete `birth_charts`, open Welcome modal (birth date, time, location); save via Supabase upsert and `setFirstTimeUser(false)`; port from `WelcomeModal.tsx`.
+- [x] **Accessibility** – Tab nav has `accessibilityLabel` and hint; `CircularNavButton` and `LevelUpModalContent` respect reduced motion; GlassButton and nav use min 44pt touch targets.
+- [x] **Loading & errors** – `SkeletonLoader`/`SkeletonCard` on Logs loading; pull-to-refresh on Logs; error messages in glass-style boxes (errorBox) in modals and screens.
 
 ### **Reference file map (quick lookup)**
 

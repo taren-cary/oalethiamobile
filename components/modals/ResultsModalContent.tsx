@@ -17,6 +17,8 @@ import { TimelineActionCard } from '@/components/timeline-action-card';
 import type { TimelineActionLink } from '@/components/timeline-action-card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGenerationResult } from '@/contexts/GenerationResultContext';
+import { useLevelUp } from '@/contexts/LevelUpContext';
+import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiPost } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import type { TimelineAction } from '@/types/timeline';
@@ -39,6 +41,8 @@ export function ResultsModalContent() {
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { result, clearResult } = useGenerationResult();
+  const { setLevelUp } = useLevelUp();
+  const { invalidate } = usePointsRefresh();
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -60,7 +64,7 @@ export function ResultsModalContent() {
     setAffirmed(true);
     try {
       const text = result.timelineAffirmations[0] ?? '';
-      await apiPost(
+      const res = await apiPost(
         '/api/affirm',
         session,
         {
@@ -69,12 +73,23 @@ export function ResultsModalContent() {
           affirmation_text: text,
         }
       );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.levelUp) {
+          setLevelUp({
+            newLevel: data.levelUp.newLevel,
+            levelName: data.levelUp.levelName,
+            previousLevel: data.levelUp.previousLevel,
+          });
+        }
+        invalidate();
+      }
     } catch {
       // keep affirmed locally
     } finally {
       setAffirmLoading(false);
     }
-  }, [session, result, affirmLoading]);
+  }, [session, result, affirmLoading, setLevelUp, invalidate]);
 
   const handleSave = useCallback(async () => {
     if (!user || !result) return;

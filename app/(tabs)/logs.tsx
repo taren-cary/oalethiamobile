@@ -6,6 +6,7 @@ import {
   Alert,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -14,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/empty-state';
 import { GlassCard } from '@/components/glass';
+import { SkeletonCard } from '@/components/skeleton-loader/SkeletonLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline } from '@/types/timeline';
@@ -63,13 +65,15 @@ export default function LogsScreen() {
 
   const [timelines, setTimelines] = useState<SavedTimeline[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTimelines = useCallback(async () => {
+  const fetchTimelines = useCallback(async (isRefresh = false) => {
     if (!user) {
       setLoading(false);
       return;
     }
+    if (!isRefresh) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('action_timeline_generations')
@@ -85,8 +89,15 @@ export default function LogsScreen() {
       setTimelines([]);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [user]);
+
+  const onRefresh = useCallback(() => {
+    if (!user) return;
+    setRefreshing(true);
+    fetchTimelines(true);
+  }, [user, fetchTimelines]);
 
   useEffect(() => {
     fetchTimelines();
@@ -156,8 +167,12 @@ export default function LogsScreen() {
           contentFit="cover"
           transition={300}
         />
-        <View style={[styles.centered, { paddingTop, paddingBottom }]}>
-          <ActivityIndicator size="large" color={glassColors.primary} />
+        <View style={[styles.centered, styles.loadingList, { paddingTop, paddingBottom }]}>
+          <SkeletonCard />
+          <View style={styles.skeletonGap} />
+          <SkeletonCard />
+          <View style={styles.skeletonGap} />
+          <SkeletonCard />
           <Text style={styles.loadingText}>Loading your timelines…</Text>
         </View>
       </View>
@@ -228,6 +243,14 @@ export default function LogsScreen() {
         ]}
         style={styles.list}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={glassColors.primary}
+            colors={[glassColors.primary, glassColors.secondary]}
+          />
+        }
         renderItem={({ item }) => (
           <TimelineLogCard
             timeline={item}
@@ -272,6 +295,12 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: glassSpacing.screenPadding,
     paddingBottom: 24,
+  },
+  loadingList: {
+    paddingHorizontal: glassSpacing.screenPadding,
+  },
+  skeletonGap: {
+    height: glassSpacing.md,
   },
   separator: {
     height: glassSpacing.md,

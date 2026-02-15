@@ -17,6 +17,8 @@ import { ShareButton } from '@/components/share-button';
 import { TimelineActionCard } from '@/components/timeline-action-card';
 import type { TimelineActionLink } from '@/components/timeline-action-card';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLevelUp } from '@/contexts/LevelUpContext';
+import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
 import { getProgress, saveProgress } from '@/lib/progress-storage';
 import { supabase } from '@/lib/supabase';
@@ -41,6 +43,8 @@ export default function TimelineDetailScreen() {
   const insets = useSafeAreaInsets();
   const { user, session } = useAuth();
   const { setShare } = useShare();
+  const { setLevelUp } = useLevelUp();
+  const { invalidate } = usePointsRefresh();
 
   const [timeline, setTimeline] = useState<SavedTimeline | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,15 +165,20 @@ export default function TimelineDetailScreen() {
       if (res.ok) {
         const data = await res.json();
         if (data.levelUp) {
-          // Phase 6 can show level-up modal; here we just continue
+          setLevelUp({
+            newLevel: data.levelUp.newLevel,
+            levelName: data.levelUp.levelName,
+            previousLevel: data.levelUp.previousLevel,
+          });
         }
+        invalidate();
       }
     } catch {
       // already marked affirmed locally
     } finally {
       setAffirmLoading(false);
     }
-  }, [id, session, affirmationIndex, affirmationText, timeline, affirmLoading]);
+  }, [id, session, affirmationIndex, affirmationText, timeline, affirmLoading, setLevelUp, invalidate]);
 
   const visibleActions =
     timeline?.actions?.filter((_, i) => !skippedActions.includes(i)) ?? [];
