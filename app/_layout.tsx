@@ -12,10 +12,12 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AnimatedSplashScreen } from '@/components/splash';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
 import { LevelUpProvider } from '@/contexts/LevelUpContext';
@@ -32,6 +34,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
   const [fontsLoaded, fontError] = useFonts({
     Orbitron_500Medium,
@@ -53,6 +56,15 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) {
     return null;
+  }
+
+  if (showAnimatedSplash) {
+    return (
+      <View style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        <AnimatedSplashScreen onFinish={() => setShowAnimatedSplash(false)} />
+      </View>
+    );
   }
 
   return (

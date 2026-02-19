@@ -140,7 +140,7 @@ export default function LogsScreen() {
     return (
       <View style={styles.container}>
         <Image
-          source={require('@/assets/images/oalethiamobilebackground5.png')}
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
@@ -162,7 +162,7 @@ export default function LogsScreen() {
     return (
       <View style={styles.container}>
         <Image
-          source={require('@/assets/images/oalethiamobilebackground.jpg')}
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
@@ -183,7 +183,7 @@ export default function LogsScreen() {
     return (
       <View style={styles.container}>
         <Image
-          source={require('@/assets/images/oalethiamobilebackground.jpg')}
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
@@ -208,7 +208,7 @@ export default function LogsScreen() {
     return (
       <View style={styles.container}>
         <Image
-          source={require('@/assets/images/oalethiamobilebackground.jpg')}
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
@@ -229,7 +229,7 @@ export default function LogsScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('@/assets/images/oalethiamobilebackground.jpg')}
+        source={require('@/assets/images/oalethiamobilebackground.jpeg')}
         style={styles.backgroundImage}
         contentFit="cover"
         transition={300}
