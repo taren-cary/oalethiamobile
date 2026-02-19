@@ -37,6 +37,7 @@ export default function RootLayout() {
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
   const [fontsLoaded, fontError] = useFonts({
+    KionaRegular: require('@/assets/fonts/Kiona-Regular.ttf'),
     Orbitron_500Medium,
     Orbitron_600SemiBold,
     Orbitron_700Bold,

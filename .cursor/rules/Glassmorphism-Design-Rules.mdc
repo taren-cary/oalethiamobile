@@ -1,4 +1,5 @@
 ---
+description: 
 alwaysApply: true
 ---
 
@@ -18,14 +19,14 @@ Style: Modern space aesthetic with depth through layered glass effects and subtl
 ### Fonts
 ```javascript
 fonts: {
-  heading: 'Orbitron',        // Headings, titles, navigation labels
+  heading: 'Kiona Regular',        // Headings, titles, navigation labels
   body: 'Inter',              // Body text, descriptions, content
 }
 ```
 
 ### Font Installation
 ```bash
-npx expo install expo-font @expo-google-fonts/orbitron @expo-google-fonts/inter
+npx expo install expo-font @expo-google-fonts/inter
 ```
 
 ### Font Weights & Sizes

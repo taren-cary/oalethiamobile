@@ -37,17 +37,17 @@ export const glassColors = {
 } as const;
 
 export const glassTypography = {
-  h1: { fontFamily: 'Orbitron_700Bold', fontSize: 32, lineHeight: 40 },
-  h2: { fontFamily: 'Orbitron_700Bold', fontSize: 28, lineHeight: 36 },
-  h3: { fontFamily: 'Orbitron_600SemiBold', fontSize: 24, lineHeight: 32 },
-  h4: { fontFamily: 'Orbitron_600SemiBold', fontSize: 20, lineHeight: 28 },
-  h5: { fontFamily: 'Orbitron_600SemiBold', fontSize: 18, lineHeight: 24 },
+  h1: { fontFamily: 'KionaRegular', fontSize: 32, lineHeight: 40 },
+  h2: { fontFamily: 'KionaRegular', fontSize: 28, lineHeight: 36 },
+  h3: { fontFamily: 'KionaRegular', fontSize: 24, lineHeight: 32 },
+  h4: { fontFamily: 'KionaRegular', fontSize: 20, lineHeight: 28 },
+  h5: { fontFamily: 'KionaRegular', fontSize: 18, lineHeight: 24 },
   bodyLarge: { fontFamily: 'Inter_400Regular', fontSize: 16, lineHeight: 24 },
   body: { fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 22 },
   bodySmall: { fontFamily: 'Inter_400Regular', fontSize: 12, lineHeight: 18 },
   label: { fontFamily: 'Inter_500Medium', fontSize: 14, lineHeight: 20 },
   labelSmall: { fontFamily: 'Inter_500Medium', fontSize: 12, lineHeight: 16 },
-  navLabel: { fontFamily: 'Orbitron_500Medium', fontSize: 10, lineHeight: 12 },
+  navLabel: { fontFamily: 'KionaRegular', fontSize: 10, lineHeight: 12 },
 } as const;
 
 export const glassSpacing = {
