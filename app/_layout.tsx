@@ -17,6 +17,7 @@ import 'react-native-reanimated';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { OnboardingScreen } from '@/components/onboarding';
 import { AnimatedSplashScreen } from '@/components/splash';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
@@ -35,6 +36,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     KionaRegular: require('@/assets/fonts/Kiona-Regular.ttf'),
@@ -55,53 +57,68 @@ export default function RootLayout() {
     onLayoutRootView();
   }, [onLayoutRootView]);
 
+  const handleOnboardingFinish = useCallback(() => {
+    setOnboardingComplete(true);
+  }, []);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
-  if (showAnimatedSplash) {
-    return (
-      <View style={{ flex: 1 }}>
-        <StatusBar style="light" />
-        <AnimatedSplashScreen onFinish={() => setShowAnimatedSplash(false)} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AuthProvider>
-          <PointsRefreshProvider>
-            <LevelUpProvider>
-              <GenerationResultProvider>
-                <ShareProvider>
-                  <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="timeline/[id]"
-              options={{
-                headerShown: true,
-                title: 'Timeline',
-                headerBackTitle: 'Logs',
-                headerStyle: { backgroundColor: '#0a0a0f' },
-                headerTintColor: '#ffffff',
-                headerShadowVisible: false,
-              }}
-            />
-            <Stack.Screen
-              name="modal"
-              options={{ presentation: 'modal', headerShown: false }}
-            />
-                  </Stack>
-                  <LevelUpModalContent />
-                  <StatusBar style="light" />
-                </ShareProvider>
-              </GenerationResultProvider>
-            </LevelUpProvider>
-          </PointsRefreshProvider>
-        </AuthProvider>
-      </ThemeProvider>
+      <View style={{ flex: 1 }}>
+        <StatusBar style="light" />
+        {showAnimatedSplash && (
+          <AnimatedSplashScreen
+            onFinish={() => setShowAnimatedSplash(false)}
+          />
+        )}
+        {!showAnimatedSplash && onboardingComplete !== true && (
+          <OnboardingScreen onFinish={handleOnboardingFinish} />
+        )}
+        {!showAnimatedSplash && onboardingComplete === true && (
+          <ThemeProvider
+            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+          >
+            <AuthProvider>
+              <PointsRefreshProvider>
+                <LevelUpProvider>
+                  <GenerationResultProvider>
+                    <ShareProvider>
+                      <Stack>
+                        <Stack.Screen
+                          name="(tabs)"
+                          options={{ headerShown: false }}
+                        />
+                        <Stack.Screen
+                          name="timeline/[id]"
+                          options={{
+                            headerShown: true,
+                            title: 'Timeline',
+                            headerBackTitle: 'Logs',
+                            headerStyle: { backgroundColor: '#0a0a0f' },
+                            headerTintColor: '#ffffff',
+                            headerShadowVisible: false,
+                          }}
+                        />
+                        <Stack.Screen
+                          name="modal"
+                          options={{
+                            presentation: 'modal',
+                            headerShown: false,
+                          }}
+                        />
+                      </Stack>
+                      <LevelUpModalContent />
+                    </ShareProvider>
+                  </GenerationResultProvider>
+                </LevelUpProvider>
+              </PointsRefreshProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        )}
+      </View>
     </SafeAreaProvider>
   );
 }
