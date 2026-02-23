@@ -7,6 +7,14 @@ import {
   Inter_400Regular,
   Inter_500Medium,
 } from '@expo-google-fonts/inter';
+import {
+  Roboto_400Regular,
+  Roboto_700Bold,
+} from '@expo-google-fonts/roboto';
+import {
+  Teko_400Regular,
+  Teko_700Bold,
+} from '@expo-google-fonts/teko';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -45,6 +53,10 @@ export default function RootLayout() {
     Orbitron_700Bold,
     Inter_400Regular,
     Inter_500Medium,
+    Roboto_400Regular,
+    Roboto_700Bold,
+    Teko_400Regular,
+    Teko_700Bold,
   });
 
   const onLayoutRootView = useCallback(() => {
