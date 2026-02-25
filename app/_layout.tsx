@@ -29,6 +29,7 @@ import { OnboardingScreen } from '@/components/onboarding';
 import { BirthDatePickerScreen } from '@/components/birth-date-picker/BirthDatePickerScreen';
 import { BirthTimePickerScreen } from '@/components/birth-time-picker/BirthTimePickerScreen';
 import { BirthLocationPickerScreen } from '@/components/birth-location-picker/BirthLocationPickerScreen';
+import { AuthScreen } from '@/components/auth';
 import { AnimatedSplashScreen } from '@/components/splash';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
@@ -51,6 +52,7 @@ export default function RootLayout() {
   const [birthDateDone, setBirthDateDone] = useState(false);
   const [birthTimeDone, setBirthTimeDone] = useState(false);
   const [birthLocationDone, setBirthLocationDone] = useState(false);
+  const [authDone, setAuthDone] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     KionaRegular: require('@/assets/fonts/Kiona-Regular.ttf'),
@@ -102,6 +104,10 @@ export default function RootLayout() {
     setBirthLocationDone(true);
   }, []);
 
+  const handleAuthDone = useCallback(() => {
+    setAuthDone(true);
+  }, []);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -136,7 +142,10 @@ export default function RootLayout() {
             onSkip={handleSkipBirthInfo}
           />
         )}
-        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && (
+        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && !authDone && (
+          <AuthScreen onDone={handleAuthDone} />
+        )}
+        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && authDone && (
           <ThemeProvider
             value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
           >
