@@ -49,9 +49,10 @@ async function searchLocations(query: string): Promise<LocationSuggestion[]> {
 
 interface BirthLocationPickerScreenProps {
   onDone: () => void;
+  onSkip?: () => void;
 }
 
-export function BirthLocationPickerScreen({ onDone }: BirthLocationPickerScreenProps) {
+export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPickerScreenProps) {
   const insets = useSafeAreaInsets();
   const [location, setLocation] = useState('');
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -97,6 +98,12 @@ export function BirthLocationPickerScreen({ onDone }: BirthLocationPickerScreenP
     onDone();
   }, [onDone]);
 
+  const handleSkip = useCallback(() => {
+    if (!onSkip) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSkip();
+  }, [onSkip]);
+
   useEffect(() => {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -128,6 +135,18 @@ export function BirthLocationPickerScreen({ onDone }: BirthLocationPickerScreenP
           style={styles.cardGradient}
         >
           <BlurView intensity={1} tint="light" style={styles.glassCard}>
+            <View style={styles.headerRow}>
+              {onSkip && (
+                <Pressable
+                  onPress={handleSkip}
+                  hitSlop={12}
+                  style={({ pressed }) => [styles.skipButton, pressed && styles.suggestionItemPressed]}
+                  accessibilityLabel="Skip birth info"
+                >
+                  <Text style={styles.skipText}>Skip</Text>
+                </Pressable>
+              )}
+            </View>
             <Text style={styles.title}>Enter your birth location</Text>
             <Text style={styles.subtitle}>
               City and country (or place name) for accurate chart calculation.
@@ -216,6 +235,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: glassSpacing.xs,
+  },
   title: {
     ...glassTypography.h2,
     color: '#fbbf24',
@@ -275,5 +300,13 @@ const styles = StyleSheet.create({
   },
   doneButton: {
     marginTop: glassSpacing.xs,
+  },
+  skipButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  skipText: {
+    ...glassTypography.label,
+    color: glassColors.text.secondary,
   },
 });

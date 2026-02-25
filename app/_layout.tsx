@@ -96,6 +96,12 @@ export default function RootLayout() {
     setBirthLocationDone(true);
   }, []);
 
+  const handleSkipBirthInfo = useCallback(() => {
+    setBirthDateDone(true);
+    setBirthTimeDone(true);
+    setBirthLocationDone(true);
+  }, []);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -113,13 +119,22 @@ export default function RootLayout() {
           <OnboardingScreen onFinish={handleOnboardingFinish} />
         )}
         {!showAnimatedSplash && onboardingComplete && !birthDateDone && (
-          <BirthDatePickerScreen onDone={handleBirthDateDone} />
+          <BirthDatePickerScreen
+            onDone={handleBirthDateDone}
+            onSkip={handleSkipBirthInfo}
+          />
         )}
         {!showAnimatedSplash && onboardingComplete && birthDateDone && !birthTimeDone && (
-          <BirthTimePickerScreen onDone={handleBirthTimeDone} />
+          <BirthTimePickerScreen
+            onDone={handleBirthTimeDone}
+            onSkip={handleSkipBirthInfo}
+          />
         )}
         {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && !birthLocationDone && (
-          <BirthLocationPickerScreen onDone={handleBirthLocationDone} />
+          <BirthLocationPickerScreen
+            onDone={handleBirthLocationDone}
+            onSkip={handleSkipBirthInfo}
+          />
         )}
         {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && (
           <ThemeProvider

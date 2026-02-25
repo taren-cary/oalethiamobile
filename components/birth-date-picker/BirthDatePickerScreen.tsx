@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@/components/glass/GlassButton';
@@ -29,9 +29,10 @@ function getDaysInMonth(year: number, month: number): number {
 
 interface BirthDatePickerScreenProps {
   onDone: () => void;
+  onSkip?: () => void;
 }
 
-export function BirthDatePickerScreen({ onDone }: BirthDatePickerScreenProps) {
+export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenProps) {
   const insets = useSafeAreaInsets();
   const currentYear = new Date().getFullYear();
   const years = useMemo(
@@ -81,6 +82,12 @@ export function BirthDatePickerScreen({ onDone }: BirthDatePickerScreenProps) {
     onDone();
   }, [onDone]);
 
+  const handleSkip = useCallback(() => {
+    if (!onSkip) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSkip();
+  }, [onSkip]);
+
   const dayValue = days[dayIndexClamped] ?? 1;
 
   useEffect(() => {
@@ -121,6 +128,18 @@ export function BirthDatePickerScreen({ onDone }: BirthDatePickerScreenProps) {
           style={styles.cardGradient}
         >
           <BlurView intensity={1} tint="light" style={styles.glassCard}>
+            <View style={styles.headerRow}>
+              {onSkip && (
+                <Pressable
+                  onPress={handleSkip}
+                  hitSlop={12}
+                  style={({ pressed }) => [styles.skipButton, pressed && styles.skipPressed]}
+                  accessibilityLabel="Skip birth info"
+                >
+                  <Text style={styles.skipText}>Skip</Text>
+                </Pressable>
+              )}
+            </View>
             <Text style={styles.title}>Enter your birth date</Text>
             <Text style={styles.subtitle}>
               We use this to map your transits and plan your cosmic actions.
@@ -237,6 +256,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: glassSpacing.xs,
+  },
   title: {
     ...glassTypography.h2,
     color: '#fbbf24',
@@ -277,5 +302,16 @@ const styles = StyleSheet.create({
   },
   doneButton: {
     marginTop: glassSpacing.xs,
+  },
+  skipButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  skipPressed: {
+    opacity: 0.8,
+  },
+  skipText: {
+    ...glassTypography.label,
+    color: glassColors.text.secondary,
   },
 });
