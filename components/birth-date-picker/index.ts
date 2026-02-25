@@ -1,0 +1,1 @@
+export { BirthDatePickerScreen } from './BirthDatePickerScreen';

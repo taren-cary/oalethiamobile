@@ -36,7 +36,8 @@ export function getOnboardingStorageKey(): string {
 }
 
 interface OnboardingScreenProps {
-  onFinish: () => void;
+  /** Called when user finishes. skipped: true = tapped Skip, false = tapped Get started. */
+  onFinish: (opts: { skipped: boolean }) => void;
 }
 
 export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
@@ -55,12 +56,12 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
 
   const handleSkip = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onFinish();
+    onFinish({ skipped: true });
   }, [onFinish]);
 
   const handleGetStarted = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onFinish();
+    onFinish({ skipped: false });
   }, [onFinish]);
 
   const renderItem: ListRenderItem<(typeof SLIDES)[number]> = useCallback(

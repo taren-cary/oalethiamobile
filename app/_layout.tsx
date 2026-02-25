@@ -26,6 +26,9 @@ import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { OnboardingScreen } from '@/components/onboarding';
+import { BirthDatePickerScreen } from '@/components/birth-date-picker/BirthDatePickerScreen';
+import { BirthTimePickerScreen } from '@/components/birth-time-picker/BirthTimePickerScreen';
+import { BirthLocationPickerScreen } from '@/components/birth-location-picker/BirthLocationPickerScreen';
 import { AnimatedSplashScreen } from '@/components/splash';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
@@ -45,6 +48,9 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [birthDateDone, setBirthDateDone] = useState(false);
+  const [birthTimeDone, setBirthTimeDone] = useState(false);
+  const [birthLocationDone, setBirthLocationDone] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     KionaRegular: require('@/assets/fonts/Kiona-Regular.ttf'),
@@ -69,8 +75,25 @@ export default function RootLayout() {
     onLayoutRootView();
   }, [onLayoutRootView]);
 
-  const handleOnboardingFinish = useCallback(() => {
+  const handleOnboardingFinish = useCallback((opts: { skipped: boolean }) => {
     setOnboardingComplete(true);
+    if (opts.skipped) {
+      setBirthDateDone(true);
+      setBirthTimeDone(true);
+      setBirthLocationDone(true);
+    }
+  }, []);
+
+  const handleBirthDateDone = useCallback(() => {
+    setBirthDateDone(true);
+  }, []);
+
+  const handleBirthTimeDone = useCallback(() => {
+    setBirthTimeDone(true);
+  }, []);
+
+  const handleBirthLocationDone = useCallback(() => {
+    setBirthLocationDone(true);
   }, []);
 
   if (!fontsLoaded && !fontError) {
@@ -86,10 +109,19 @@ export default function RootLayout() {
             onFinish={() => setShowAnimatedSplash(false)}
           />
         )}
-        {!showAnimatedSplash && onboardingComplete !== true && (
+        {!showAnimatedSplash && !onboardingComplete && (
           <OnboardingScreen onFinish={handleOnboardingFinish} />
         )}
-        {!showAnimatedSplash && onboardingComplete === true && (
+        {!showAnimatedSplash && onboardingComplete && !birthDateDone && (
+          <BirthDatePickerScreen onDone={handleBirthDateDone} />
+        )}
+        {!showAnimatedSplash && onboardingComplete && birthDateDone && !birthTimeDone && (
+          <BirthTimePickerScreen onDone={handleBirthTimeDone} />
+        )}
+        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && !birthLocationDone && (
+          <BirthLocationPickerScreen onDone={handleBirthLocationDone} />
+        )}
+        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && (
           <ThemeProvider
             value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
           >
