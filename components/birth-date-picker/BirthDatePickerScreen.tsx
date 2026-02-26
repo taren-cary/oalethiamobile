@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@/components/glass/GlassButton';
+import { useOnboarding } from '@/contexts/OnboardingContext';
 import {
   glassBorderRadius,
   glassColors,
@@ -34,6 +35,7 @@ interface BirthDatePickerScreenProps {
 
 export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenProps) {
   const insets = useSafeAreaInsets();
+  const { setBirthDate } = useOnboarding();
   const currentYear = new Date().getFullYear();
   const years = useMemo(
     () => Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i),
@@ -77,18 +79,21 @@ export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenP
     if (clamped !== yearIndex) setYearIndex(clamped);
   }, [yearIndex, years.length]);
 
+  const dayValue = days[dayIndexClamped] ?? 1;
+
   const handleDone = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const yearVal = years[yearIndex] ?? currentYear - 25;
+    const dateStr = `${yearVal}-${String(monthIndex + 1).padStart(2, '0')}-${String(dayValue).padStart(2, '0')}`;
+    setBirthDate(dateStr);
     onDone();
-  }, [onDone]);
+  }, [onDone, setBirthDate, years, yearIndex, monthIndex, dayValue, currentYear]);
 
   const handleSkip = useCallback(() => {
     if (!onSkip) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSkip();
   }, [onSkip]);
-
-  const dayValue = days[dayIndexClamped] ?? 1;
 
   useEffect(() => {
     const t = setTimeout(() => {

@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@/components/glass/GlassButton';
+import { useOnboarding } from '@/contexts/OnboardingContext';
 import {
   glassBorderRadius,
   glassColors,
@@ -54,7 +55,9 @@ interface BirthLocationPickerScreenProps {
 
 export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPickerScreenProps) {
   const insets = useSafeAreaInsets();
+  const { setBirthLocation } = useOnboarding();
   const [location, setLocation] = useState('');
+  const [selectedCoords, setSelectedCoords] = useState<{ lat: string; lon: string } | null>(null);
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -62,6 +65,7 @@ export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPicke
 
   const handleChangeText = useCallback((text: string) => {
     setLocation(text);
+    setSelectedCoords(null);
     setError('');
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
@@ -90,13 +94,17 @@ export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPicke
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
     setLocation(suggestion.display_name);
+    setSelectedCoords({ lat: suggestion.lat, lon: suggestion.lon });
     setSuggestions([]);
   }, []);
 
   const handleDone = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const lat = selectedCoords ? parseFloat(selectedCoords.lat) : 0;
+    const lon = selectedCoords ? parseFloat(selectedCoords.lon) : 0;
+    setBirthLocation(location.trim(), lat, lon);
     onDone();
-  }, [onDone]);
+  }, [onDone, setBirthLocation, location, selectedCoords]);
 
   const handleSkip = useCallback(() => {
     if (!onSkip) return;

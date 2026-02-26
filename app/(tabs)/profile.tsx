@@ -133,14 +133,6 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.title}>Profile</Text>
-          <GlassCard>
-            <Text style={styles.body}>Sign in to view your profile, streak, and subscription.</Text>
-          <GlassButton
-            title="Sign in"
-            onPress={() => router.push({ pathname: '/modal', params: { type: 'auth' } })}
-            accessibilityLabel="Sign in"
-          />
-          </GlassCard>
         </ScrollView>
       </View>
     );

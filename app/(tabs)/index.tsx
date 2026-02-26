@@ -227,17 +227,6 @@ export default function HomeScreen() {
           <Text style={styles.brandSubtitle}>
             Your cosmic journey begins here.
           </Text>
-          <GlassCard style={styles.ctaCard}>
-            <Text style={styles.ctaText}>
-              Sign in to save timelines, track your streak, and unlock your
-              daily affirmations.
-            </Text>
-            <GlassButton
-              title="Sign in"
-              onPress={() => router.push({ pathname: '/modal', params: { type: 'auth' } })}
-              accessibilityLabel="Sign in to your account"
-            />
-          </GlassCard>
           <AffirmationCard
             text={DEFAULT_AFFIRMATION}
             date={todayFormatted}
@@ -343,14 +332,6 @@ const styles = StyleSheet.create({
     ...glassTypography.body,
     color: glassColors.text.secondary,
     marginBottom: glassSpacing.lg,
-  },
-  ctaCard: {
-    marginBottom: glassSpacing.lg,
-  },
-  ctaText: {
-    ...glassTypography.body,
-    color: glassColors.text.secondary,
-    marginBottom: glassSpacing.md,
   },
   statsRow: {
     flexDirection: 'row',

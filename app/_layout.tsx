@@ -32,6 +32,7 @@ import { BirthLocationPickerScreen } from '@/components/birth-location-picker/Bi
 import { AuthScreen } from '@/components/auth';
 import { AnimatedSplashScreen } from '@/components/splash';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
 import { LevelUpProvider } from '@/contexts/LevelUpContext';
 import { PointsRefreshProvider } from '@/contexts/PointsRefreshContext';
@@ -121,70 +122,74 @@ export default function RootLayout() {
             onFinish={() => setShowAnimatedSplash(false)}
           />
         )}
-        {!showAnimatedSplash && !onboardingComplete && (
-          <OnboardingScreen onFinish={handleOnboardingFinish} />
-        )}
-        {!showAnimatedSplash && onboardingComplete && !birthDateDone && (
-          <BirthDatePickerScreen
-            onDone={handleBirthDateDone}
-            onSkip={handleSkipBirthInfo}
-          />
-        )}
-        {!showAnimatedSplash && onboardingComplete && birthDateDone && !birthTimeDone && (
-          <BirthTimePickerScreen
-            onDone={handleBirthTimeDone}
-            onSkip={handleSkipBirthInfo}
-          />
-        )}
-        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && !birthLocationDone && (
-          <BirthLocationPickerScreen
-            onDone={handleBirthLocationDone}
-            onSkip={handleSkipBirthInfo}
-          />
-        )}
-        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && !authDone && (
-          <AuthScreen onDone={handleAuthDone} />
-        )}
-        {!showAnimatedSplash && onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && authDone && (
-          <ThemeProvider
-            value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
-          >
+        {!showAnimatedSplash && (
+          <OnboardingProvider>
             <AuthProvider>
-              <PointsRefreshProvider>
-                <LevelUpProvider>
-                  <GenerationResultProvider>
-                    <ShareProvider>
-                      <Stack>
-                        <Stack.Screen
-                          name="(tabs)"
-                          options={{ headerShown: false }}
-                        />
-                        <Stack.Screen
-                          name="timeline/[id]"
-                          options={{
-                            headerShown: true,
-                            title: 'Timeline',
-                            headerBackTitle: 'Logs',
-                            headerStyle: { backgroundColor: '#0a0a0f' },
-                            headerTintColor: '#ffffff',
-                            headerShadowVisible: false,
-                          }}
-                        />
-                        <Stack.Screen
-                          name="modal"
-                          options={{
-                            presentation: 'modal',
-                            headerShown: false,
-                          }}
-                        />
-                      </Stack>
-                      <LevelUpModalContent />
-                    </ShareProvider>
-                  </GenerationResultProvider>
-                </LevelUpProvider>
-              </PointsRefreshProvider>
+              {!onboardingComplete && (
+                <OnboardingScreen onFinish={handleOnboardingFinish} />
+              )}
+              {onboardingComplete && !birthDateDone && (
+                <BirthDatePickerScreen
+                  onDone={handleBirthDateDone}
+                  onSkip={handleSkipBirthInfo}
+                />
+              )}
+              {onboardingComplete && birthDateDone && !birthTimeDone && (
+                <BirthTimePickerScreen
+                  onDone={handleBirthTimeDone}
+                  onSkip={handleSkipBirthInfo}
+                />
+              )}
+              {onboardingComplete && birthDateDone && birthTimeDone && !birthLocationDone && (
+                <BirthLocationPickerScreen
+                  onDone={handleBirthLocationDone}
+                  onSkip={handleSkipBirthInfo}
+                />
+              )}
+              {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && !authDone && (
+                <AuthScreen onDone={handleAuthDone} />
+              )}
+              {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && authDone && (
+                <ThemeProvider
+                  value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+                >
+                  <PointsRefreshProvider>
+                    <LevelUpProvider>
+                      <GenerationResultProvider>
+                        <ShareProvider>
+                          <Stack>
+                            <Stack.Screen
+                              name="(tabs)"
+                              options={{ headerShown: false }}
+                            />
+                            <Stack.Screen
+                              name="timeline/[id]"
+                              options={{
+                                headerShown: true,
+                                title: 'Timeline',
+                                headerBackTitle: 'Logs',
+                                headerStyle: { backgroundColor: '#0a0a0f' },
+                                headerTintColor: '#ffffff',
+                                headerShadowVisible: false,
+                              }}
+                            />
+                            <Stack.Screen
+                              name="modal"
+                              options={{
+                                presentation: 'modal',
+                                headerShown: false,
+                              }}
+                            />
+                          </Stack>
+                          <LevelUpModalContent />
+                        </ShareProvider>
+                      </GenerationResultProvider>
+                    </LevelUpProvider>
+                  </PointsRefreshProvider>
+                </ThemeProvider>
+              )}
             </AuthProvider>
-          </ThemeProvider>
+          </OnboardingProvider>
         )}
       </View>
     </SafeAreaProvider>

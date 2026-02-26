@@ -148,10 +148,10 @@ export default function LogsScreen() {
         <View style={[styles.centered, { paddingTop, paddingBottom }]}>
           <EmptyState
             icon="document-text-outline"
-            title="Sign in to view timelines"
-            description="Create an account or sign in to save and access your cosmic action plans."
-            actionLabel="Sign in"
-            onAction={() => router.push({ pathname: '/modal', params: { type: 'auth' } })}
+            title="No timelines yet"
+            description="Create your first cosmic action plan from the Generate tab."
+            actionLabel="Create timeline"
+            onAction={() => router.push('/(tabs)/generator')}
           />
         </View>
       </View>

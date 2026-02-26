@@ -15,12 +15,18 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton, GlassTextInput } from '@/components/glass';
+import { useAuth } from '@/contexts/AuthContext';
+import { useOnboarding } from '@/contexts/OnboardingContext';
+import { supabase } from '@/lib/supabase';
 import {
   glassBorderRadius,
   glassColors,
   glassSpacing,
   glassTypography,
 } from '@/theme';
+
+const USERNAME_MIN = 3;
+const PASSWORD_MIN = 6;
 
 type AuthMode = 'signup' | 'login';
 
@@ -30,22 +36,129 @@ interface AuthScreenProps {
 
 export function AuthScreen({ onDone }: AuthScreenProps) {
   const insets = useSafeAreaInsets();
+  const { signUp, signIn } = useAuth();
+  const {
+    birthDate,
+    birthTime,
+    location,
+    latitude,
+    longitude,
+    hasBirthData,
+  } = useOnboarding();
+
   const [mode, setMode] = useState<AuthMode>('signup');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleToggleMode = useCallback(() => {
     Haptics.selectionAsync();
     setMode((prev) => (prev === 'signup' ? 'login' : 'signup'));
+    setError('');
   }, []);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Design-only: no real auth yet, just continue
-    onDone();
-  }, [onDone]);
+    setError('');
+
+    if (mode === 'signup') {
+      const un = username.trim().toLowerCase();
+      if (un.length < USERNAME_MIN) {
+        setError('Username must be at least 3 characters');
+        return;
+      }
+      if (!email.trim()) {
+        setError('Please enter your email');
+        return;
+      }
+      if (password.length < PASSWORD_MIN) {
+        setError(`Password must be at least ${PASSWORD_MIN} characters`);
+        return;
+      }
+      setLoading(true);
+      try {
+        const result = await signUp(email.trim(), password, un);
+        if (result.error) {
+          setError(result.error.message);
+          setLoading(false);
+          return;
+        }
+        if (result.user && hasBirthData && birthDate && location) {
+          const timeStr = birthTime.trim() || '12:00';
+          const { error: chartError } = await supabase.from('birth_charts').upsert(
+            {
+              user_id: result.user.id,
+              birth_date: birthDate.trim(),
+              birth_time: timeStr,
+              location: location.trim(),
+              latitude,
+              longitude,
+              planets: {},
+              houses: {},
+              ascendant: 0,
+              mc: 0,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id' }
+          );
+          if (chartError) {
+            setError('Account created but failed to save birth data. You can add it later in settings.');
+            setLoading(false);
+            return;
+          }
+        }
+        const signInResult = await signIn(email.trim(), password);
+        if (signInResult.error) {
+          setError('Account created. Please sign in with your email and password.');
+          setLoading(false);
+          return;
+        }
+        onDone();
+      } catch {
+        setError('Something went wrong. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      const loginEmail = loginId.trim();
+      if (!loginEmail || !password) {
+        setError('Please enter your email and password');
+        return;
+      }
+      setLoading(true);
+      try {
+        const result = await signIn(loginEmail, password);
+        if (result.error) {
+          setError(result.error.message);
+          setLoading(false);
+          return;
+        }
+        onDone();
+      } catch {
+        setError('Something went wrong. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, [
+    mode,
+    username,
+    email,
+    loginId,
+    password,
+    signUp,
+    signIn,
+    onDone,
+    hasBirthData,
+    birthDate,
+    birthTime,
+    location,
+    latitude,
+    longitude,
+  ]);
 
   const handleDevBypass = useCallback(() => {
     Haptics.selectionAsync();
@@ -170,13 +283,14 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
               ) : (
                 <>
                   <GlassTextInput
-                    label="Username or email"
+                    label="Email"
                     value={loginId}
-                    onChangeText={setLoginId}
-                    placeholder="your@email.com or username"
+                    onChangeText={(t) => { setLoginId(t); setError(''); }}
+                    placeholder="your@email.com"
+                    keyboardType="email-address"
                     autoCapitalize="none"
                     autoCorrect={false}
-                    accessibilityLabel="Username or email"
+                    accessibilityLabel="Email"
                   />
                   <GlassTextInput
                     label="Password"
@@ -189,9 +303,15 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                 </>
               )}
 
+              {error ? (
+                <View style={styles.errorWrap}>
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
               <GlassButton
-                title={isSignup ? 'Create account' : 'Log in'}
+                title={loading ? (isSignup ? 'Creating…' : 'Signing in…') : (isSignup ? 'Create account' : 'Log in')}
                 onPress={handleSubmit}
+                disabled={loading}
                 accessibilityLabel={isSignup ? 'Create account' : 'Log in'}
                 style={styles.primaryButton}
               />
@@ -320,6 +440,19 @@ const styles = StyleSheet.create({
   devBypassText: {
     ...glassTypography.bodySmall,
     color: glassColors.text.tertiary,
+    textAlign: 'center',
+  },
+  errorWrap: {
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderRadius: glassBorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.5)',
+    padding: glassSpacing.sm,
+    marginBottom: glassSpacing.md,
+  },
+  errorText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.primary,
     textAlign: 'center',
   },
 });

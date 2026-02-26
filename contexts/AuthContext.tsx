@@ -17,7 +17,7 @@ export interface AuthContextType {
     email: string,
     password: string,
     username: string
-  ) => Promise<{ error: { message: string } | null }>;
+  ) => Promise<{ error: { message: string } | null; user: User | null }>;
   signIn: (email: string, password: string) => Promise<{
     error: { message: string } | null;
   }>;
@@ -89,7 +89,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       email: string,
       password: string,
       username: string
-    ): Promise<{ error: { message: string } | null }> => {
+    ): Promise<{ error: { message: string } | null; user: User | null }> => {
       const { data: existingUser, error: checkError } = await supabase
         .from('user_profiles')
         .select('username')
@@ -97,11 +97,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         .single();
 
       if (checkError && checkError.code !== 'PGRST116') {
-        return { error: { message: 'Error checking username availability' } };
+        return { error: { message: 'Error checking username availability' }, user: null };
       }
 
       if (existingUser) {
-        return { error: { message: 'Username is already taken' } };
+        return { error: { message: 'Username is already taken' }, user: null };
       }
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -111,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
 
       if (authError) {
-        return { error: { message: authError.message } };
+        return { error: { message: authError.message }, user: null };
       }
 
       if (authData.user) {
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
       }
 
-      return { error: null };
+      return { error: null, user: authData.user ?? null };
     },
     []
   );

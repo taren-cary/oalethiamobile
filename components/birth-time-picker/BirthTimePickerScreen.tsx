@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@/components/glass/GlassButton';
+import { useOnboarding } from '@/contexts/OnboardingContext';
 import {
   glassBorderRadius,
   glassColors,
@@ -34,6 +35,7 @@ interface BirthTimePickerScreenProps {
 
 export function BirthTimePickerScreen({ onDone, onSkip }: BirthTimePickerScreenProps) {
   const insets = useSafeAreaInsets();
+  const { setBirthTime } = useOnboarding();
   const [hourIndex, setHourIndex] = useState(DEFAULT_HOUR_INDEX);
   const [minuteIndex, setMinuteIndex] = useState(DEFAULT_MINUTE_INDEX);
   const [ampmIndex, setAmpmIndex] = useState(DEFAULT_AMPM_INDEX);
@@ -82,8 +84,11 @@ export function BirthTimePickerScreen({ onDone, onSkip }: BirthTimePickerScreenP
 
   const handleDone = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const h = hour === 12 ? (ampm === 'AM' ? 0 : 12) : (ampm === 'PM' ? hour + 12 : hour);
+    const timeStr = `${String(h).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    setBirthTime(timeStr);
     onDone();
-  }, [onDone]);
+  }, [onDone, setBirthTime, hour, minute, ampm]);
 
   const handleSkip = useCallback(() => {
     if (!onSkip) return;
