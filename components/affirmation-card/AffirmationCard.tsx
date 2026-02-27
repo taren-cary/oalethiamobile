@@ -49,6 +49,13 @@ export function AffirmationCard({
           <Text style={styles.posterText}>
             {text}
           </Text>
+          <View style={styles.posterWatermark}>
+            <Image
+              source={require('../../assets/images/oalethialogowhite.svg')}
+              style={styles.watermarkImage}
+              contentFit="contain"
+            />
+          </View>
         </View>
       </View>
       <View style={styles.actions}>
@@ -95,7 +102,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: glassSpacing.lg,
     paddingTop: '45%',
+    paddingBottom: glassSpacing.sm,
     alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  posterWatermark: {
+    alignSelf: 'center',
+  },
+  watermarkImage: {
+    width: 40,
+    height: 40,
+    opacity: 0.35,
   },
   posterText: {
     ...glassTypography.bodyLarge,
