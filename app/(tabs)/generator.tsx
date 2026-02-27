@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton } from '@/components/glass';
-import { glassSpacing } from '@/theme';
+import { glassColors, glassSpacing, glassTypography } from '@/theme';
 
 export default function GeneratorScreen() {
   const router = useRouter();
@@ -23,11 +23,12 @@ export default function GeneratorScreen() {
         style={[
           styles.content,
           {
-            paddingTop: insets.top + glassSpacing.xxl,
+            paddingTop: insets.top + glassSpacing.md,
             paddingBottom: insets.bottom + 100,
           },
         ]}
       >
+        <Text style={styles.title}>Generate</Text>
         <GlassButton
           title="Create timeline"
           onPress={() => router.push({ pathname: '/modal', params: { type: 'create-timeline' } })}
@@ -50,8 +51,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: glassSpacing.screenPadding,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+  },
+  title: {
+    ...glassTypography.h2,
+    color: glassColors.text.primary,
+    marginBottom: glassSpacing.lg,
   },
   cta: {
     minWidth: 200,

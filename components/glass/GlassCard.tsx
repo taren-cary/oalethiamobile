@@ -1,7 +1,7 @@
 import React from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 
-import { glassBorderRadius, glassColors, glassSpacing } from '@/theme';
+import { glassBorderRadius, glassSpacing } from '@/theme';
 
 import { GlassContainer, type GlassContainerProps } from './GlassContainer';
 
@@ -14,10 +14,16 @@ export function GlassCard({
   children,
   cardStyle,
   style,
+  blur = 'light',
   ...containerProps
 }: GlassCardProps) {
   return (
-    <GlassContainer style={style} gradientBorder {...containerProps}>
+    <GlassContainer
+      style={style}
+      gradientBorder
+      blur={blur}
+      {...containerProps}
+    >
       <View style={[styles.card, cardStyle]}>{children}</View>
     </GlassContainer>
   );

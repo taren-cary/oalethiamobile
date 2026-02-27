@@ -251,6 +251,11 @@ export default function LogsScreen() {
             colors={[glassColors.primary, glassColors.secondary]}
           />
         }
+        ListHeaderComponent={
+          <Text style={styles.title}>
+            Logs
+          </Text>
+        }
         renderItem={({ item }) => (
           <TimelineLogCard
             timeline={item}
@@ -295,6 +300,11 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: glassSpacing.screenPadding,
     paddingBottom: 24,
+  },
+  title: {
+    ...glassTypography.h2,
+    color: glassColors.text.primary,
+    marginBottom: glassSpacing.lg,
   },
   loadingList: {
     paddingHorizontal: glassSpacing.screenPadding,

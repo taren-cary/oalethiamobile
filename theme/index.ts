@@ -5,10 +5,10 @@
 
 export const glassColors = {
   glass: {
-    light: 'rgba(255, 255, 255, 0.1)',
-    medium: 'rgba(255, 255, 255, 0.15)',
-    strong: 'rgba(255, 255, 255, 0.2)',
-    extraStrong: 'rgba(255, 255, 255, 0.25)',
+    light: 'rgba(255, 255, 255, 0.05)',
+    medium: 'rgba(255, 255, 255, 0.08)',
+    strong: 'rgba(255, 255, 255, 0.10)',
+    extraStrong: 'rgba(255, 255, 255, 0.15)',
   },
   glassBorder: {
     default: 'rgba(255, 255, 255, 0.2)',
@@ -76,7 +76,7 @@ export const glassBorderRadius = {
 } as const;
 
 export const blurIntensity = {
-  light: 10,
-  medium: 20,
-  strong: 30,
+  light: 1,
+  medium: 15,
+  strong: 25,
 } as const;

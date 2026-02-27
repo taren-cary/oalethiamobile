@@ -4,10 +4,9 @@
 
 - Purpose: Daily entry point
 - Content:
+- Level/Badge & Points in one slim glassmorphism card(as well as points to next level and streak counter in the same card) at the top of the page
 - Today's affirmation (large, shareable)
 - Active timeline preview (if any)
-- Streak counter
-- Points/level badge
 - Navigation: Bottom tab (first icon)
 
 ### **2. Generate**

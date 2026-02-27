@@ -25,7 +25,7 @@ import {
 const ONBOARDING_STORAGE_KEY = '@oalethia/onboarding_complete';
 
 const SLIDES = [
-  { id: '1', source: require('@/assets/images/onboarding1.jpg') },
+  { id: '1', source: require('@/assets/images/onboarding1.png') },
   { id: '2', source: require('@/assets/images/onboarding2.jpg') },
   { id: '3', source: require('@/assets/images/onboarding3.jpg') },
   { id: '4', source: require('@/assets/images/onboarding4.jpg') },
