@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -37,9 +38,19 @@ export function AffirmationCard({
     <GlassCard>
       <Text style={styles.title}>{TITLE}</Text>
       <Text style={styles.date}>{date}</Text>
-      <Text style={styles.quote} numberOfLines={6}>
-        "{text}"
-      </Text>
+      <View style={styles.poster}>
+        <Image
+          source={require('../../assets/affirmations/affirmation_test.jpg')}
+          style={StyleSheet.absoluteFillObject}
+          contentFit="cover"
+          transition={300}
+        />
+        <View style={styles.posterOverlay}>
+          <Text style={styles.posterText}>
+            {text}
+          </Text>
+        </View>
+      </View>
       <View style={styles.actions}>
         <GlassButton
           title={affirmed ? 'Affirmed' : 'Affirm'}
@@ -73,14 +84,29 @@ const styles = StyleSheet.create({
     color: glassColors.text.tertiary,
     marginBottom: glassSpacing.md,
   },
-  quote: {
-    ...glassTypography.bodyLarge,
-    color: glassColors.text.secondary,
-    fontStyle: 'italic',
+  poster: {
+    width: '100%',
+    aspectRatio: 9 / 16,
+    borderRadius: 24,
+    overflow: 'hidden',
     marginBottom: glassSpacing.lg,
+  },
+  posterOverlay: {
+    flex: 1,
+    paddingHorizontal: glassSpacing.lg,
+    paddingTop: '45%',
+    alignItems: 'center',
+  },
+  posterText: {
+    ...glassTypography.bodyLarge,
+    color: glassColors.text.primary,
+    textAlign: 'center',
+    fontFamily: 'Times New Roman',
   },
   actions: {
     flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     gap: glassSpacing.md,
     flexWrap: 'wrap',
   },

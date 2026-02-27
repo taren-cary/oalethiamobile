@@ -150,9 +150,6 @@ export default function HomeScreen() {
 
   const fetchTodayAffirmation = useCallback(async () => {
     if (!latestTimeline?.id || !session) {
-      if (!latestTimeline && user) {
-        setAffirmationText(DEFAULT_AFFIRMATION);
-      }
       return;
     }
     try {
@@ -379,16 +376,36 @@ export default function HomeScreen() {
           )
         )}
 
-        <AffirmationCard
-          text={affirmationText}
-          date={todayFormatted}
-          affirmed={affirmed}
-          onAffirm={handleAffirm}
-          onShare={() => {
-            setShare(affirmationText, "Today's cosmic affirmation");
-            router.push({ pathname: '/modal', params: { type: 'share' } });
-          }}
-        />
+        {latestTimeline ? (
+          <AffirmationCard
+            text={affirmationText}
+            date={todayFormatted}
+            affirmed={affirmed}
+            onAffirm={handleAffirm}
+            onShare={() => {
+              setShare(affirmationText, "Today's cosmic affirmation");
+              router.push({ pathname: '/modal', params: { type: 'share' } });
+            }}
+          />
+        ) : (
+          <GlassCard>
+            <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>
+            <Text style={styles.noAffirmationBody}>
+              Generate your first cosmic timeline on the Generate tab to unlock
+              personalized daily affirmations.
+            </Text>
+            <View style={styles.noAffirmationActions}>
+              <GlassButton
+                title="Create timeline"
+                onPress={() =>
+                  router.push({ pathname: '/modal', params: { type: 'create-timeline' } })
+                }
+                accessibilityLabel="Create your first timeline"
+                accessibilityHint="Opens the timeline creation form"
+              />
+            </View>
+          </GlassCard>
+        )}
 
         {latestTimeline && (
           <Pressable
@@ -527,5 +544,19 @@ const styles = StyleSheet.create({
   previewMeta: {
     ...glassTypography.bodySmall,
     color: glassColors.text.tertiary,
+  },
+  noAffirmationTitle: {
+    ...glassTypography.h5,
+    color: glassColors.text.primary,
+    marginBottom: glassSpacing.sm,
+  },
+  noAffirmationBody: {
+    ...glassTypography.body,
+    color: glassColors.text.secondary,
+    marginBottom: glassSpacing.md,
+  },
+  noAffirmationActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
   },
 });
