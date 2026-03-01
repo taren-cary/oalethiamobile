@@ -18,6 +18,8 @@ export interface AffirmationCardProps {
   onShare?: () => void;
   /** Remote URL for poster background (e.g. from today-affirmation API). Falls back to bundled image when null/undefined. */
   imageUrl?: string | null;
+  /** When true, show "Affirming…" and disable the Affirm button. */
+  affirmLoading?: boolean;
 }
 
 const TITLE = "Today's cosmic affirmation";
@@ -29,6 +31,7 @@ export function AffirmationCard({
   onAffirm,
   onShare,
   imageUrl,
+  affirmLoading = false,
 }: AffirmationCardProps) {
   const posterShotRef = useRef<ViewShot>(null);
   const [sharing, setSharing] = useState(false);
@@ -37,10 +40,10 @@ export function AffirmationCard({
     ? { uri: imageUrl.trim() }
     : FALLBACK_POSTER;
   const handleAffirm = useCallback(() => {
-    if (affirmed) return;
+    if (affirmed || affirmLoading) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onAffirm();
-  }, [affirmed, onAffirm]);
+  }, [affirmed, affirmLoading, onAffirm]);
 
   const handleShare = useCallback(async () => {
     if (sharing) return;
@@ -95,9 +98,9 @@ export function AffirmationCard({
       </ViewShot>
       <View style={styles.actions}>
         <GlassButton
-          title={affirmed ? 'Affirmed' : 'Affirm'}
+          title={affirmed ? 'Affirmed' : affirmLoading ? 'Affirming…' : 'Affirm'}
           onPress={handleAffirm}
-          disabled={affirmed}
+          disabled={affirmed || affirmLoading}
           accessibilityLabel={affirmed ? 'Affirmed' : 'Confirm today’s affirmation'}
           accessibilityHint={affirmed ? undefined : 'Double tap to confirm'}
         />

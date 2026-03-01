@@ -2,9 +2,10 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useShare } from '@/contexts/ShareContext';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,14 +14,21 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AffirmationCard } from '@/components/affirmation-card';
+import {
+  AffirmationCard,
+  SwipeableAffirmationCard,
+} from '@/components/affirmation-card';
 import { GlassButton, GlassCard } from '@/components/glass';
 import type { LevelData } from '@/components/points-level-badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
-import { getMockHomeData, HOME_DEV_MODE } from '@/lib/mockHomeData';
+import {
+  getMockHomeData,
+  HOME_DEV_MODE,
+  type TodayAffirmationItem,
+} from '@/lib/mockHomeData';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline } from '@/types/timeline';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
@@ -88,6 +96,12 @@ export default function HomeScreen() {
   );
   const [affirmationImageUrl, setAffirmationImageUrl] = useState<string | null>(null);
   const [affirmLoading, setAffirmLoading] = useState(false);
+  /** Dev only: track which timeline IDs were affirmed in the swipeable carousel. */
+  const [affirmedTimelineIdsDev, setAffirmedTimelineIdsDev] = useState<string[]>([]);
+  /** Signed-in: all today's affirmations (one per timeline). Null while loading. */
+  const [todayAffirmations, setTodayAffirmations] = useState<TodayAffirmationItem[] | null>(null);
+  /** Signed-in: timeline ID whose Affirm is currently in progress. */
+  const [affirmLoadingId, setAffirmLoadingId] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
     if (!session) {
@@ -133,55 +147,70 @@ export default function HomeScreen() {
     }
   }, [session]);
 
-  const fetchLatestTimeline = useCallback(async () => {
-    if (!user) return;
+  const fetchRecentTimelinesAndAffirmations = useCallback(async () => {
+    if (!user || !session) return;
     try {
-      const { data } = await supabase
+      const { data: timelines, error: timelinesError } = await supabase
         .from('action_timeline_generations')
-        .select('*')
+        .select('id, outcome, created_at, actions, timeline_affirmations')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      setLatestTimeline(data ?? null);
+        .limit(10);
+
+      if (timelinesError || !timelines?.length) {
+        setLatestTimeline(null);
+        setTodayAffirmations([]);
+        return;
+      }
+
+      const first = timelines[0];
+      setLatestTimeline({
+        id: first.id,
+        user_id: user.id,
+        outcome: first.outcome,
+        context: '',
+        timeframe: 0,
+        actions: first.actions ?? [],
+        timeline_affirmations: first.timeline_affirmations ?? [],
+        summary: {},
+        credits_used: 0,
+        created_at: first.created_at,
+      });
+
+      const results = await Promise.all(
+        timelines.map((t) =>
+          apiGet(`/api/today-affirmation/${t.id}`, session).then(async (res) => {
+            if (res.ok) {
+              const data = await res.json();
+              return {
+                timelineId: t.id,
+                outcome: t.outcome,
+                affirmationText: data.affirmation_text ?? DEFAULT_AFFIRMATION,
+                imageUrl: data.image_url ?? null,
+                affirmed: data.affirmed === true,
+                affirmationIndex: data.affirmation_index ?? 0,
+              };
+            }
+            const fallback =
+              t.timeline_affirmations?.[0] ?? DEFAULT_AFFIRMATION;
+            return {
+              timelineId: t.id,
+              outcome: t.outcome,
+              affirmationText: fallback,
+              imageUrl: null,
+              affirmed: false,
+              affirmationIndex: 0,
+            };
+          })
+        )
+      );
+
+      setTodayAffirmations(results);
     } catch {
       setLatestTimeline(null);
+      setTodayAffirmations([]);
     }
-  }, [user]);
-
-  const fetchTodayAffirmation = useCallback(async () => {
-    if (!latestTimeline?.id || !session) {
-      return;
-    }
-    try {
-      const res = await apiGet(
-        `/api/today-affirmation/${latestTimeline.id}`,
-        session
-      );
-      if (res.ok) {
-        const data = await res.json();
-        setAffirmationIndex(data.affirmation_index ?? 0);
-        setAffirmationText(data.affirmation_text ?? DEFAULT_AFFIRMATION);
-        setAffirmed(data.affirmed === true);
-        setAffirmationImageUrl(data.image_url ?? null);
-      } else if (latestTimeline.timeline_affirmations?.length) {
-        setAffirmationImageUrl(null);
-        const idx = 0;
-        setAffirmationText(
-          latestTimeline.timeline_affirmations[idx] ?? DEFAULT_AFFIRMATION
-        );
-      } else {
-        setAffirmationImageUrl(null);
-      }
-    } catch {
-      setAffirmationImageUrl(null);
-      if (latestTimeline.timeline_affirmations?.length) {
-        setAffirmationText(
-          latestTimeline.timeline_affirmations[0] ?? DEFAULT_AFFIRMATION
-        );
-      }
-    }
-  }, [latestTimeline, session, user]);
+  }, [user, session]);
 
   useEffect(() => {
     if (useDevHomeData) {
@@ -189,8 +218,8 @@ export default function HomeScreen() {
     }
     fetchProfile();
     fetchLevel();
-    fetchLatestTimeline();
-  }, [fetchProfile, fetchLevel, fetchLatestTimeline, useDevHomeData]);
+    fetchRecentTimelinesAndAffirmations();
+  }, [fetchProfile, fetchLevel, fetchRecentTimelinesAndAffirmations, useDevHomeData]);
 
   useEffect(() => {
     if (useDevHomeData || invalidateAt <= 0) {
@@ -200,12 +229,48 @@ export default function HomeScreen() {
     fetchProfile();
   }, [invalidateAt, fetchLevel, fetchProfile, useDevHomeData]);
 
-  useEffect(() => {
-    if (useDevHomeData) {
-      return;
-    }
-    fetchTodayAffirmation();
-  }, [fetchTodayAffirmation, useDevHomeData]);
+  const handleAffirmForTimeline = useCallback(
+    async (timelineId: string, affirmationIndexVal: number, affirmationTextVal: string) => {
+      if (!session) return;
+      setAffirmLoadingId(timelineId);
+      try {
+        const res = await apiPost(
+          '/api/affirm',
+          session,
+          {
+            generation_id: timelineId,
+            affirmation_index: affirmationIndexVal,
+            affirmation_text: affirmationTextVal,
+          }
+        );
+        if (res.ok) {
+          setTodayAffirmations((prev) =>
+            prev
+              ? prev.map((item) =>
+                  item.timelineId === timelineId
+                    ? { ...item, affirmed: true }
+                    : item
+                )
+              : prev
+          );
+          const data = await res.json();
+          if (data.levelUp) {
+            setLevelUp({
+              newLevel: data.levelUp.newLevel,
+              levelName: data.levelUp.levelName,
+              previousLevel: data.levelUp.previousLevel,
+            });
+          }
+          invalidate();
+        }
+      } catch {
+        // keep previous state
+      } finally {
+        setAffirmLoadingId(null);
+      }
+    },
+    [session, setLevelUp, invalidate]
+  );
 
   const handleAffirm = useCallback(async () => {
     if (useDevHomeData) {
@@ -220,10 +285,18 @@ export default function HomeScreen() {
       return;
     }
     if (!session || affirmLoading) return;
+    const single = todayAffirmations?.length === 1 ? todayAffirmations[0] : null;
+    if (single) {
+      await handleAffirmForTimeline(
+        single.timelineId,
+        single.affirmationIndex,
+        single.affirmationText
+      );
+      return;
+    }
     const generationId = latestTimeline?.id ?? 'temp_unsaved';
     setAffirmLoading(true);
     setAffirmed(true);
-
     try {
       const res = await apiPost(
         '/api/affirm',
@@ -256,6 +329,9 @@ export default function HomeScreen() {
     affirmationIndex,
     affirmationText,
     affirmLoading,
+    affirmed,
+    todayAffirmations,
+    handleAffirmForTimeline,
     setLevelUp,
     invalidate,
   ]);
@@ -266,6 +342,39 @@ export default function HomeScreen() {
     month: 'long',
     day: 'numeric',
   });
+
+  // Swipeable card (poster-only swipe, fixed Affirm/Share, one-page-per-swipe) for both dev and signed-in when 2+ affirmations
+  const showSwipeableAffirmations =
+    (useDevHomeData &&
+      mockData?.todayAffirmations &&
+      mockData.todayAffirmations.length > 1) ||
+    (!useDevHomeData &&
+      todayAffirmations !== null &&
+      todayAffirmations.length > 1);
+
+  const carouselData: TodayAffirmationItem[] = showSwipeableAffirmations
+    ? useDevHomeData
+      ? mockData!.todayAffirmations
+      : todayAffirmations!
+    : [];
+
+  const carouselDataForCard = useMemo(
+    () =>
+      useDevHomeData && carouselData.length
+        ? carouselData.map((item) => ({
+            ...item,
+            affirmed:
+              item.affirmed || affirmedTimelineIdsDev.includes(item.timelineId),
+          }))
+        : carouselData,
+    [carouselData, useDevHomeData, affirmedTimelineIdsDev]
+  );
+
+  const handleDevCarouselAffirm = useCallback((timelineId: string) => {
+    setAffirmedTimelineIdsDev((prev) =>
+      prev.includes(timelineId) ? prev : [...prev, timelineId]
+    );
+  }, []);
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
@@ -382,17 +491,84 @@ export default function HomeScreen() {
           )
         )}
 
-        {latestTimeline ? (
-          <AffirmationCard
-            text={affirmationText}
+        {showSwipeableAffirmations ? (
+          <SwipeableAffirmationCard
+            items={carouselDataForCard}
             date={todayFormatted}
-            affirmed={affirmed}
-            onAffirm={handleAffirm}
-            imageUrl={affirmationImageUrl}
-            onShare={() => {
-              /* Poster image is captured and shared by AffirmationCard */
+            onAffirm={(item) => {
+              if (useDevHomeData) {
+                handleDevCarouselAffirm(item.timelineId);
+              } else {
+                handleAffirmForTimeline(
+                  item.timelineId,
+                  item.affirmationIndex,
+                  item.affirmationText
+                );
+              }
             }}
+            onShare={() => {}}
+            affirmLoadingId={useDevHomeData ? undefined : affirmLoadingId}
           />
+        ) : !useDevHomeData && todayAffirmations === null ? (
+          <View style={styles.affirmationLoading}>
+            <ActivityIndicator size="small" color={glassColors.primary} />
+            <Text style={styles.affirmationLoadingText}>Loading affirmations…</Text>
+          </View>
+        ) : (useDevHomeData && mockData?.latestTimeline && !showSwipeableAffirmations) ||
+          (!useDevHomeData && todayAffirmations?.length === 1) ? (
+          (() => {
+            const single = useDevHomeData
+              ? {
+                  text: mockData!.affirmationText,
+                  imageUrl: null as string | null,
+                  affirmed: mockData!.affirmed,
+                  onAffirm: handleAffirm,
+                  timelineId: mockData!.latestTimeline.id,
+                }
+              : {
+                  text: todayAffirmations![0].affirmationText,
+                  imageUrl: todayAffirmations![0].imageUrl,
+                  affirmed: todayAffirmations![0].affirmed,
+                  onAffirm: () =>
+                    handleAffirmForTimeline(
+                      todayAffirmations![0].timelineId,
+                      todayAffirmations![0].affirmationIndex,
+                      todayAffirmations![0].affirmationText
+                    ),
+                  timelineId: todayAffirmations![0].timelineId,
+                };
+            return (
+              <AffirmationCard
+                text={single.text}
+                date={todayFormatted}
+                affirmed={single.affirmed}
+                onAffirm={single.onAffirm}
+                imageUrl={single.imageUrl}
+                affirmLoading={
+                  !useDevHomeData && affirmLoadingId === single.timelineId
+                }
+                onShare={() => {}}
+              />
+            );
+          })()
+        ) : !useDevHomeData && todayAffirmations?.length === 0 ? (
+          <GlassCard>
+            <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>
+            <Text style={styles.noAffirmationBody}>
+              Generate your first cosmic timeline on the Generate tab to unlock
+              personalized daily affirmations.
+            </Text>
+            <View style={styles.noAffirmationActions}>
+              <GlassButton
+                title="Create timeline"
+                onPress={() =>
+                  router.push({ pathname: '/modal', params: { type: 'create-timeline' } })
+                }
+                accessibilityLabel="Create your first timeline"
+                accessibilityHint="Opens the timeline creation form"
+              />
+            </View>
+          </GlassCard>
         ) : (
           <GlassCard>
             <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>
@@ -564,5 +740,15 @@ const styles = StyleSheet.create({
   noAffirmationActions: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
+  },
+  affirmationLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: glassSpacing.xl,
+    gap: glassSpacing.sm,
+  },
+  affirmationLoadingText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
   },
 });

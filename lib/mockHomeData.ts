@@ -1,6 +1,19 @@
 import type { LevelData } from '@/components/points-level-badge';
 import type { SavedTimeline } from '@/types/timeline';
 
+/** Single "today's affirmation" item (one per timeline). Used for both mock and real data. */
+export interface TodayAffirmationItem {
+  timelineId: string;
+  outcome: string;
+  affirmationText: string;
+  imageUrl: string | null;
+  affirmed: boolean;
+  affirmationIndex: number;
+}
+
+/** @deprecated Use TodayAffirmationItem */
+export type MockTodayAffirmation = TodayAffirmationItem;
+
 export interface MockHomeData {
   streak: number;
   levelData: LevelData;
@@ -8,6 +21,8 @@ export interface MockHomeData {
   affirmationText: string;
   affirmationIndex: number;
   affirmed: boolean;
+  /** When length > 1, Home shows swipeable affirmation cards (dev preview). */
+  todayAffirmations: TodayAffirmationItem[];
 }
 
 /**
@@ -86,6 +101,37 @@ export function getMockHomeData(): MockHomeData {
   const affirmationText =
     'I am aligned with my cosmic path, and every step I take is supported by the universe.';
 
+  // Multiple affirmations for swipeable cards preview in signed-out dev view
+  const todayAffirmations: TodayAffirmationItem[] = [
+    {
+      timelineId: 'mock-timeline-1',
+      outcome: 'Launch my first paid cosmic coaching offer',
+      affirmationText:
+        'I am aligned with my cosmic path, and every step I take is supported by the universe.',
+      imageUrl: null,
+      affirmed: false,
+      affirmationIndex: 0,
+    },
+    {
+      timelineId: 'mock-timeline-2',
+      outcome: 'Build a morning meditation habit',
+      affirmationText:
+        'I welcome stillness each morning; my mind is clear and my intentions are strong.',
+      imageUrl: null,
+      affirmed: true,
+      affirmationIndex: 2,
+    },
+    {
+      timelineId: 'mock-timeline-3',
+      outcome: 'Strengthen my closest relationships',
+      affirmationText:
+        'I show up with an open heart and attract deeper connection every day.',
+      imageUrl: null,
+      affirmed: false,
+      affirmationIndex: 1,
+    },
+  ];
+
   return {
     streak: 7,
     levelData,
@@ -93,6 +139,7 @@ export function getMockHomeData(): MockHomeData {
     affirmationText,
     affirmationIndex,
     affirmed: false,
+    todayAffirmations,
   };
 }
 
