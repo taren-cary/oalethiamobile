@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useShare } from '@/contexts/ShareContext';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -19,6 +19,7 @@ import {
   SwipeableAffirmationCard,
 } from '@/components/affirmation-card';
 import { GlassButton, GlassCard } from '@/components/glass';
+import { NextActionCard } from '@/components/next-action-card/NextActionCard';
 import type { LevelData } from '@/components/points-level-badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLevelUp } from '@/contexts/LevelUpContext';
@@ -26,9 +27,12 @@ import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
 import {
   getMockHomeData,
+  getNextActionItem,
   HOME_DEV_MODE,
+  type NextActionItem,
   type TodayAffirmationItem,
 } from '@/lib/mockHomeData';
+import { getProgress, saveProgress } from '@/lib/progress-storage';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline } from '@/types/timeline';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
@@ -102,6 +106,16 @@ export default function HomeScreen() {
   const [todayAffirmations, setTodayAffirmations] = useState<TodayAffirmationItem[] | null>(null);
   /** Signed-in: timeline ID whose Affirm is currently in progress. */
   const [affirmLoadingId, setAffirmLoadingId] = useState<string | null>(null);
+  /** Dev only: completed/skipped per timeline for next-action cards. */
+  const [devNextActionProgress, setDevNextActionProgress] = useState<
+    Record<string, { completed: number[]; skipped: number[] }>
+  >({});
+  /** Signed-in: all recent timelines (for next-action cards). */
+  const [recentTimelines, setRecentTimelines] = useState<SavedTimeline[] | null>(null);
+  /** Signed-in: progress (completed/skipped) per timeline from AsyncStorage. */
+  const [progressByTimelineId, setProgressByTimelineId] = useState<
+    Record<string, { completed: number[]; skipped: number[] }>
+  >({});
 
   const fetchProfile = useCallback(async () => {
     if (!session) {
@@ -159,23 +173,37 @@ export default function HomeScreen() {
 
       if (timelinesError || !timelines?.length) {
         setLatestTimeline(null);
+        setRecentTimelines(null);
+        setProgressByTimelineId({});
         setTodayAffirmations([]);
         return;
       }
 
-      const first = timelines[0];
-      setLatestTimeline({
-        id: first.id,
+      const asSaved: SavedTimeline[] = timelines.map((t) => ({
+        id: t.id,
         user_id: user.id,
-        outcome: first.outcome,
+        outcome: t.outcome,
         context: '',
         timeframe: 0,
-        actions: first.actions ?? [],
-        timeline_affirmations: first.timeline_affirmations ?? [],
+        actions: t.actions ?? [],
+        timeline_affirmations: t.timeline_affirmations ?? [],
         summary: {},
         credits_used: 0,
-        created_at: first.created_at,
+        created_at: t.created_at,
+      }));
+
+      setRecentTimelines(asSaved);
+      setLatestTimeline(asSaved[0]);
+
+      const progressResults = await Promise.all(
+        asSaved.map((t) => getProgress(t.id))
+      );
+      const progressMap: Record<string, { completed: number[]; skipped: number[] }> = {};
+      asSaved.forEach((t, i) => {
+        const p = progressResults[i];
+        progressMap[t.id] = { completed: p.completed, skipped: p.skipped };
       });
+      setProgressByTimelineId(progressMap);
 
       const results = await Promise.all(
         timelines.map((t) =>
@@ -208,6 +236,8 @@ export default function HomeScreen() {
       setTodayAffirmations(results);
     } catch {
       setLatestTimeline(null);
+      setRecentTimelines(null);
+      setProgressByTimelineId({});
       setTodayAffirmations([]);
     }
   }, [user, session]);
@@ -228,6 +258,29 @@ export default function HomeScreen() {
     fetchLevel();
     fetchProfile();
   }, [invalidateAt, fetchLevel, fetchProfile, useDevHomeData]);
+
+  /** When returning to Home (e.g. from timeline detail), reload progress so next-action cards stay in sync. */
+  useFocusEffect(
+    useCallback(() => {
+      if (useDevHomeData || !recentTimelines?.length) return;
+      (async () => {
+        const results = await Promise.all(
+          recentTimelines.map((t) => getProgress(t.id))
+        );
+        const progressMap: Record<
+          string,
+          { completed: number[]; skipped: number[] }
+        > = {};
+        recentTimelines.forEach((t, i) => {
+          progressMap[t.id] = {
+            completed: results[i].completed,
+            skipped: results[i].skipped,
+          };
+        });
+        setProgressByTimelineId(progressMap);
+      })();
+    }, [useDevHomeData, recentTimelines])
+  );
 
   const handleAffirmForTimeline = useCallback(
     async (timelineId: string, affirmationIndexVal: number, affirmationTextVal: string) => {
@@ -368,6 +421,82 @@ export default function HomeScreen() {
           }))
         : carouselData,
     [carouselData, useDevHomeData, affirmedTimelineIdsDev]
+  );
+
+  /** Dev: next-action items derived from mock data + local complete/skip state. */
+  const devNextActionItems = useMemo((): NextActionItem[] => {
+    if (!useDevHomeData || !mockData?.recentTimelinesWithNextActions) return [];
+    return mockData.recentTimelinesWithNextActions
+      .map((item) => {
+        const progress = devNextActionProgress[item.timeline.id];
+        const completed = progress?.completed ?? item.completed;
+        const skipped = progress?.skipped ?? item.skipped;
+        return getNextActionItem(item.timeline, completed, skipped);
+      })
+      .filter((x): x is NextActionItem => x != null);
+  }, [useDevHomeData, mockData?.recentTimelinesWithNextActions, devNextActionProgress]);
+
+  const handleDevNextActionToggleComplete = useCallback((timelineId: string, actionIndex: number) => {
+    setDevNextActionProgress((prev) => {
+      const cur = prev[timelineId] ?? { completed: [], skipped: [] };
+      const completed = cur.completed.includes(actionIndex)
+        ? cur.completed.filter((i) => i !== actionIndex)
+        : [...cur.completed, actionIndex];
+      return { ...prev, [timelineId]: { ...cur, completed } };
+    });
+  }, []);
+
+  const handleDevNextActionSkip = useCallback((timelineId: string, actionIndex: number) => {
+    setDevNextActionProgress((prev) => {
+      const cur = prev[timelineId] ?? { completed: [], skipped: [] };
+      const skipped = cur.skipped.includes(actionIndex)
+        ? cur.skipped
+        : [...cur.skipped, actionIndex];
+      return { ...prev, [timelineId]: { ...cur, skipped } };
+    });
+  }, []);
+
+  /** Signed-in: next-action items from recentTimelines + progressByTimelineId. */
+  const realNextActionItems = useMemo((): NextActionItem[] => {
+    if (useDevHomeData || !recentTimelines?.length) return [];
+    return recentTimelines
+      .map((timeline) => {
+        const progress = progressByTimelineId[timeline.id];
+        const completed = progress?.completed ?? [];
+        const skipped = progress?.skipped ?? [];
+        return getNextActionItem(timeline, completed, skipped);
+      })
+      .filter((x): x is NextActionItem => x != null);
+  }, [useDevHomeData, recentTimelines, progressByTimelineId]);
+
+  const handleRealNextActionToggleComplete = useCallback(
+    async (timelineId: string, actionIndex: number) => {
+      const cur = progressByTimelineId[timelineId] ?? { completed: [], skipped: [] };
+      const completed = cur.completed.includes(actionIndex)
+        ? cur.completed.filter((i) => i !== actionIndex)
+        : [...cur.completed, actionIndex];
+      setProgressByTimelineId((prev) => ({
+        ...prev,
+        [timelineId]: { ...cur, completed },
+      }));
+      await saveProgress(timelineId, { completed });
+    },
+    [progressByTimelineId]
+  );
+
+  const handleRealNextActionSkip = useCallback(
+    async (timelineId: string, actionIndex: number) => {
+      const cur = progressByTimelineId[timelineId] ?? { completed: [], skipped: [] };
+      const skipped = cur.skipped.includes(actionIndex)
+        ? cur.skipped
+        : [...cur.skipped, actionIndex];
+      setProgressByTimelineId((prev) => ({
+        ...prev,
+        [timelineId]: { ...cur, skipped },
+      }));
+      await saveProgress(timelineId, { skipped });
+    },
+    [progressByTimelineId]
   );
 
   const handleDevCarouselAffirm = useCallback((timelineId: string) => {
@@ -589,9 +718,64 @@ export default function HomeScreen() {
           </GlassCard>
         )}
 
-        {latestTimeline && (
+        {(useDevHomeData && devNextActionItems.length > 0) ||
+        (!useDevHomeData && realNextActionItems.length > 0) ? (
+          <View style={styles.nextActionsSection}>
+            <Text style={styles.nextActionsSectionTitle}>Your next actions</Text>
+            <Text style={styles.nextActionsSectionSubtitle}>
+              One card per timeline — complete or skip to advance
+            </Text>
+            {(useDevHomeData ? devNextActionItems : realNextActionItems).map(
+              (item) => (
+                <NextActionCard
+                  key={item.timeline.id}
+                  timelineId={item.timeline.id}
+                  outcome={item.timeline.outcome}
+                  action={item.nextAction}
+                  actionIndex={item.nextActionOriginalIndex}
+                  completed={item.completed.includes(item.nextActionOriginalIndex)}
+                  onToggleComplete={() =>
+                    useDevHomeData
+                      ? handleDevNextActionToggleComplete(
+                          item.timeline.id,
+                          item.nextActionOriginalIndex
+                        )
+                      : handleRealNextActionToggleComplete(
+                          item.timeline.id,
+                          item.nextActionOriginalIndex
+                        )
+                  }
+                  onSkip={() =>
+                    useDevHomeData
+                      ? handleDevNextActionSkip(
+                          item.timeline.id,
+                          item.nextActionOriginalIndex
+                        )
+                      : handleRealNextActionSkip(
+                          item.timeline.id,
+                          item.nextActionOriginalIndex
+                        )
+                  }
+                  onViewTimeline={() =>
+                    router.push({
+                      pathname: '/timeline/[id]',
+                      params: { id: item.timeline.id },
+                    })
+                  }
+                  pulse
+                  reduceMotion={false}
+                />
+              )
+            )}
+          </View>
+        ) : !useDevHomeData && latestTimeline ? (
           <Pressable
-            onPress={() => router.push({ pathname: '/timeline/[id]', params: { id: latestTimeline.id } })}
+            onPress={() =>
+              router.push({
+                pathname: '/timeline/[id]',
+                params: { id: latestTimeline.id },
+              })
+            }
             style={({ pressed }) => [pressed && styles.pressed]}
             accessibilityRole="button"
             accessibilityLabel={`Open timeline: ${latestTimeline.outcome}`}
@@ -607,7 +791,7 @@ export default function HomeScreen() {
               </Text>
             </GlassCard>
           </Pressable>
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -750,5 +934,17 @@ const styles = StyleSheet.create({
   affirmationLoadingText: {
     ...glassTypography.bodySmall,
     color: glassColors.text.tertiary,
+  },
+  nextActionsSection: {
+    gap: glassSpacing.md,
+  },
+  nextActionsSectionTitle: {
+    ...glassTypography.h4,
+    color: glassColors.text.primary,
+  },
+  nextActionsSectionSubtitle: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.secondary,
+    marginBottom: glassSpacing.xs,
   },
 });

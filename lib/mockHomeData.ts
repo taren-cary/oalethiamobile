@@ -1,5 +1,5 @@
 import type { LevelData } from '@/components/points-level-badge';
-import type { SavedTimeline } from '@/types/timeline';
+import type { SavedTimeline, TimelineAction } from '@/types/timeline';
 
 /** Single "today's affirmation" item (one per timeline). Used for both mock and real data. */
 export interface TodayAffirmationItem {
@@ -14,6 +14,15 @@ export interface TodayAffirmationItem {
 /** @deprecated Use TodayAffirmationItem */
 export type MockTodayAffirmation = TodayAffirmationItem;
 
+/** One timeline's "next action" for home next-action cards (dev or real). */
+export interface NextActionItem {
+  timeline: SavedTimeline;
+  nextAction: TimelineAction;
+  nextActionOriginalIndex: number;
+  completed: number[];
+  skipped: number[];
+}
+
 export interface MockHomeData {
   streak: number;
   levelData: LevelData;
@@ -23,6 +32,8 @@ export interface MockHomeData {
   affirmed: boolean;
   /** When length > 1, Home shows swipeable affirmation cards (dev preview). */
   todayAffirmations: TodayAffirmationItem[];
+  /** Next action per timeline for dev home (animated pulse, countdown, etc.). */
+  recentTimelinesWithNextActions: NextActionItem[];
 }
 
 /**
@@ -32,6 +43,28 @@ export interface MockHomeData {
  * In production builds this will always be false.
  */
 export const HOME_DEV_MODE = __DEV__;
+
+/** Compute next action for a timeline given completed/skipped indices. */
+export function getNextActionItem(
+  timeline: SavedTimeline,
+  completed: number[],
+  skipped: number[]
+): NextActionItem | null {
+  const visible = timeline.actions.filter((_, i) => !skipped.includes(i));
+  const nextIdx = visible.findIndex(
+    (a) => !completed.includes(timeline.actions.indexOf(a))
+  );
+  if (nextIdx < 0) return null;
+  const nextAction = visible[nextIdx];
+  const nextActionOriginalIndex = timeline.actions.indexOf(nextAction);
+  return {
+    timeline,
+    nextAction,
+    nextActionOriginalIndex,
+    completed,
+    skipped,
+  };
+}
 
 export function getMockHomeData(): MockHomeData {
   const now = new Date();
@@ -132,6 +165,72 @@ export function getMockHomeData(): MockHomeData {
     },
   ];
 
+  // Second timeline for next-action cards (dev)
+  const timeline2: SavedTimeline = {
+    id: 'mock-timeline-2',
+    user_id: 'mock-user-id',
+    outcome: 'Build a morning meditation habit',
+    context: 'Starting the day with 10 minutes of stillness.',
+    timeframe: 30,
+    actions: [
+      {
+        date: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10),
+        action: 'Set a daily 7am alarm and sit in silence for 5 minutes.',
+        transit: 'Moon in Pisces',
+        strategy:
+          'Pisces supports introspection. Keep it simple: breath focus or a short mantra.',
+      },
+      {
+        date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10),
+        action: 'Extend to 10 minutes and add one grounding affirmation.',
+        transit: 'Mercury trine Neptune',
+        strategy: 'Let intuition guide your wording; write it down the night before.',
+      },
+    ],
+    timeline_affirmations: [
+      'I welcome stillness each morning; my mind is clear and my intentions are strong.',
+    ],
+    summary: { actionsGenerated: 2 },
+    credits_used: 0,
+    created_at: createdAt.toISOString(),
+  };
+
+  // Third timeline for next-action cards (dev)
+  const timeline3: SavedTimeline = {
+    id: 'mock-timeline-3',
+    user_id: 'mock-user-id',
+    outcome: 'Strengthen my closest relationships',
+    context: 'Quality time and honest communication.',
+    timeframe: 60,
+    actions: [
+      {
+        date: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .slice(0, 10),
+        action: 'Schedule one 1:1 call or meal with a person you care about this week.',
+        transit: 'Venus in Gemini',
+        strategy:
+          'Conversation and curiosity. Ask one deep question and really listen.',
+      },
+    ],
+    timeline_affirmations: [
+      'I show up with an open heart and attract deeper connection every day.',
+    ],
+    summary: { actionsGenerated: 1 },
+    credits_used: 0,
+    created_at: createdAt.toISOString(),
+  };
+
+  const recentTimelinesWithNextActions: NextActionItem[] = [
+    getNextActionItem(latestTimeline, [], [])!,
+    getNextActionItem(timeline2, [], [])!,
+    getNextActionItem(timeline3, [], [])!,
+  ];
+
   return {
     streak: 7,
     levelData,
@@ -140,6 +239,7 @@ export function getMockHomeData(): MockHomeData {
     affirmationIndex,
     affirmed: false,
     todayAffirmations,
+    recentTimelinesWithNextActions,
   };
 }
 
