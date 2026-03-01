@@ -38,6 +38,10 @@ export function SwipeableAffirmationCard({
   const [posterWidth, setPosterWidth] = useState(0);
   const posterRefs = useRef<Record<number, React.ElementRef<typeof ViewShot> | null>>({});
   const listRef = useRef<FlatList<TodayAffirmationItem> | null>(null);
+  const currentIndexRef = useRef(0);
+  const isScrollingProgrammaticallyRef = useRef(false);
+
+  currentIndexRef.current = currentIndex;
 
   const onPosterListLayout = useCallback((e: LayoutChangeEvent) => {
     const w = e.nativeEvent.layout.width;
@@ -83,25 +87,31 @@ export function SwipeableAffirmationCard({
   const onMomentumScrollEnd = useCallback(
     (e: { nativeEvent: { contentOffset: { x: number } } }) => {
       if (posterWidth <= 0) return;
+      if (isScrollingProgrammaticallyRef.current) {
+        isScrollingProgrammaticallyRef.current = false;
+        return;
+      }
       const offsetX = e.nativeEvent.contentOffset.x;
       const landedIndex = Math.round(offsetX / posterWidth);
       const bounded = Math.max(0, Math.min(items.length - 1, landedIndex));
-      // Only allow moving one page per gesture: clamp to current ± 1
+      const latestIndex = currentIndexRef.current;
       const nextIndex =
-        bounded > currentIndex + 1
-          ? currentIndex + 1
-          : bounded < currentIndex - 1
-            ? currentIndex - 1
+        bounded > latestIndex + 1
+          ? latestIndex + 1
+          : bounded < latestIndex - 1
+            ? latestIndex - 1
             : bounded;
       setCurrentIndex(nextIndex);
+      currentIndexRef.current = nextIndex;
       if (nextIndex !== bounded) {
+        isScrollingProgrammaticallyRef.current = true;
         listRef.current?.scrollToOffset({
           offset: nextIndex * posterWidth,
           animated: true,
         });
       }
     },
-    [currentIndex, items.length, posterWidth]
+    [items.length, posterWidth]
   );
 
   const renderPoster = useCallback(
