@@ -19,4 +19,6 @@ export interface SavedTimeline {
   summary: { actionsGenerated?: number };
   credits_used: number;
   created_at: string;
+  /** One of 12 life-context slugs for affirmation image folder (e.g. career, identity). */
+  life_context?: string | null;
 }

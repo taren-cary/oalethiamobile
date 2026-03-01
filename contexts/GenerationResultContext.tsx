@@ -21,6 +21,8 @@ export interface GenerationResult {
   timelineAffirmations: string[];
   summary: GenerationSummary;
   tempGenerationId: string;
+  /** Life-context slug from backend for affirmation image folder (e.g. career, identity). */
+  life_context?: string;
 }
 
 interface GenerationResultContextType {

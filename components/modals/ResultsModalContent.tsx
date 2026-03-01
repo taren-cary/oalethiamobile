@@ -4,7 +4,6 @@ import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
-  Share,
   StyleSheet,
   Text,
   View,
@@ -19,6 +18,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGenerationResult } from '@/contexts/GenerationResultContext';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
+import {
+  DEFAULT_IMAGE_COUNT_PER_CONTEXT,
+  normalizeLifeContext,
+} from '@/lib/affirmationLifeContexts';
 import { apiPost } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import type { TimelineAction } from '@/types/timeline';
@@ -95,6 +98,7 @@ export function ResultsModalContent() {
     if (!user || !result) return;
     setSaving(true);
     try {
+      const lifeContext = normalizeLifeContext(result.life_context);
       const { data: savedTimeline, error } = await supabase
         .from('action_timeline_generations')
         .insert({
@@ -106,6 +110,7 @@ export function ResultsModalContent() {
           timeline_affirmations: result.timelineAffirmations,
           summary: result.summary,
           credits_used: 1,
+          life_context: lifeContext,
           created_at: new Date().toISOString(),
         })
         .select()
@@ -114,6 +119,7 @@ export function ResultsModalContent() {
       if (error) throw error;
 
       const today = new Date();
+      const imageCount = DEFAULT_IMAGE_COUNT_PER_CONTEXT;
       const dailyAffirmations = result.timelineAffirmations.slice(0, 30).map((text, i) => {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
@@ -125,6 +131,7 @@ export function ResultsModalContent() {
           date: d.toISOString().split('T')[0],
           affirmed: false,
           points_awarded: 0,
+          image_index: i % imageCount,
         };
       });
       await supabase.from('daily_affirmations').insert(dailyAffirmations);
@@ -209,7 +216,9 @@ export function ResultsModalContent() {
             date={todayFormatted}
             affirmed={affirmed}
             onAffirm={handleAffirm}
-            onShare={() => Share.share({ message: affirmationText, title: "Today's cosmic affirmation" })}
+            onShare={() => {
+              /* Poster image is captured and shared by AffirmationCard */
+            }}
           />
         ) : null}
 

@@ -53,6 +53,7 @@ export default function TimelineDetailScreen() {
   const [skippedActions, setSkippedActions] = useState<number[]>([]);
   const [affirmationIndex, setAffirmationIndex] = useState(0);
   const [affirmationText, setAffirmationText] = useState('');
+  const [affirmationImageUrl, setAffirmationImageUrl] = useState<string | null>(null);
   const [affirmed, setAffirmed] = useState(false);
   const [affirmLoading, setAffirmLoading] = useState(false);
 
@@ -97,8 +98,9 @@ export default function TimelineDetailScreen() {
       setAffirmationIndex(data.affirmation_index ?? 0);
       setAffirmationText(data.affirmation_text ?? '');
       setAffirmed(data.affirmed === true);
+      setAffirmationImageUrl(data.image_url ?? null);
     } catch {
-      // use timeline_affirmations as fallback
+      setAffirmationImageUrl(null);
       if (timeline?.timeline_affirmations?.length) {
         const idx = affirmationIndex % timeline.timeline_affirmations.length;
         setAffirmationText(timeline.timeline_affirmations[idx]);
@@ -258,10 +260,10 @@ export default function TimelineDetailScreen() {
             text={affirmationText}
             date={todayFormatted}
             affirmed={affirmed}
+            imageUrl={affirmationImageUrl}
             onAffirm={handleAffirm}
             onShare={() => {
-              setShare(affirmationText, "Today's cosmic affirmation");
-              router.push({ pathname: '/modal', params: { type: 'share' } });
+              /* Poster image is captured and shared by AffirmationCard */
             }}
           />
           <View style={styles.shareRow}>

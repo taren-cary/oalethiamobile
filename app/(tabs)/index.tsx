@@ -86,6 +86,7 @@ export default function HomeScreen() {
   const [affirmed, setAffirmed] = useState(
     useDevHomeData && mockData ? mockData.affirmed : false
   );
+  const [affirmationImageUrl, setAffirmationImageUrl] = useState<string | null>(null);
   const [affirmLoading, setAffirmLoading] = useState(false);
 
   const fetchProfile = useCallback(async () => {
@@ -162,13 +163,18 @@ export default function HomeScreen() {
         setAffirmationIndex(data.affirmation_index ?? 0);
         setAffirmationText(data.affirmation_text ?? DEFAULT_AFFIRMATION);
         setAffirmed(data.affirmed === true);
+        setAffirmationImageUrl(data.image_url ?? null);
       } else if (latestTimeline.timeline_affirmations?.length) {
+        setAffirmationImageUrl(null);
         const idx = 0;
         setAffirmationText(
           latestTimeline.timeline_affirmations[idx] ?? DEFAULT_AFFIRMATION
         );
+      } else {
+        setAffirmationImageUrl(null);
       }
     } catch {
+      setAffirmationImageUrl(null);
       if (latestTimeline.timeline_affirmations?.length) {
         setAffirmationText(
           latestTimeline.timeline_affirmations[0] ?? DEFAULT_AFFIRMATION
@@ -382,9 +388,9 @@ export default function HomeScreen() {
             date={todayFormatted}
             affirmed={affirmed}
             onAffirm={handleAffirm}
+            imageUrl={affirmationImageUrl}
             onShare={() => {
-              setShare(affirmationText, "Today's cosmic affirmation");
-              router.push({ pathname: '/modal', params: { type: 'share' } });
+              /* Poster image is captured and shared by AffirmationCard */
             }}
           />
         ) : (

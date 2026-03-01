@@ -1,10 +1,14 @@
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
-import React, { useCallback } from 'react';
+import * as Sharing from 'expo-sharing';
+import React, { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import ViewShot from 'react-native-view-shot';
 
 import { GlassButton, GlassCard } from '@/components/glass';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
+
+const FALLBACK_POSTER = require('../../assets/affirmations/affirmation_test.jpg');
 
 export interface AffirmationCardProps {
   text: string;
@@ -12,6 +16,8 @@ export interface AffirmationCardProps {
   affirmed: boolean;
   onAffirm: () => void;
   onShare?: () => void;
+  /** Remote URL for poster background (e.g. from today-affirmation API). Falls back to bundled image when null/undefined. */
+  imageUrl?: string | null;
 }
 
 const TITLE = "Today's cosmic affirmation";
@@ -22,25 +28,54 @@ export function AffirmationCard({
   affirmed,
   onAffirm,
   onShare,
+  imageUrl,
 }: AffirmationCardProps) {
+  const posterShotRef = useRef<ViewShot>(null);
+  const [sharing, setSharing] = useState(false);
+
+  const posterSource = imageUrl?.trim()
+    ? { uri: imageUrl.trim() }
+    : FALLBACK_POSTER;
   const handleAffirm = useCallback(() => {
     if (affirmed) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onAffirm();
   }, [affirmed, onAffirm]);
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
+    if (sharing) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onShare?.();
-  }, [onShare]);
+    setSharing(true);
+    try {
+      const uri = await posterShotRef.current?.capture?.();
+      if (uri) {
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'image/jpeg',
+            dialogTitle: "Share today's affirmation",
+          });
+        }
+        onShare?.();
+      }
+    } catch {
+      // User dismissed or capture/share failed
+    } finally {
+      setSharing(false);
+    }
+  }, [onShare, sharing]);
 
   return (
     <GlassCard>
       <Text style={styles.title}>{TITLE}</Text>
       <Text style={styles.date}>{date}</Text>
-      <View style={styles.poster}>
+      <ViewShot
+        ref={posterShotRef}
+        options={{ format: 'jpg', quality: 1 }}
+        style={styles.poster}
+      >
         <Image
-          source={require('../../assets/affirmations/affirmation_test.jpg')}
+          source={posterSource}
           style={StyleSheet.absoluteFillObject}
           contentFit="cover"
           transition={300}
@@ -57,7 +92,7 @@ export function AffirmationCard({
             />
           </View>
         </View>
-      </View>
+      </ViewShot>
       <View style={styles.actions}>
         <GlassButton
           title={affirmed ? 'Affirmed' : 'Affirm'}
@@ -68,11 +103,12 @@ export function AffirmationCard({
         />
         {onShare && (
           <GlassButton
-            title="Share"
+            title={sharing ? 'Sharing…' : 'Share'}
             onPress={handleShare}
+            disabled={sharing}
             variant="secondary"
-            accessibilityLabel="Share affirmation"
-            accessibilityHint="Double tap to open share options"
+            accessibilityLabel={sharing ? 'Sharing poster' : 'Share affirmation poster'}
+            accessibilityHint="Double tap to share the poster image"
           />
         )}
       </View>

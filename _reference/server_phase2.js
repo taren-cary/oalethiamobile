@@ -110,6 +110,14 @@ const ACHIEVEMENT_LEVELS = [
   { level: 12, name: "Eternal Sovereign", points: 75000 }
 ];
 
+// Life-context slugs for affirmation images (must match app and Storage paths)
+const LIFE_CONTEXT_SLUGS = [
+  'career', 'growth', 'health', 'finance', 'relationship', 'spirituality', 'general'
+];
+const DEFAULT_LIFE_CONTEXT = 'general';
+const AFFIRMATION_IMAGE_COUNT_PER_CONTEXT = 10;
+const AFFIRMATION_IMAGES_BUCKET = 'affirmation-images';
+
 // Helper function to calculate user level from lifetime points
 function calculateLevel(lifetimePoints) {
   // Start from highest level and work down
@@ -741,6 +749,50 @@ Generate exactly ${totalDays} affirmations as a valid JSON array:`;
       result.push(fallbackAffirmations[i % fallbackAffirmations.length]);
     }
     return result;
+  }
+}
+
+/**
+ * Classify user goal into one of 12 life-context slugs (for affirmation images).
+ * Uses OpenAI to pick the best-matching slug.
+ */
+async function classifyLifeContext(outcome, context) {
+  const slugList = LIFE_CONTEXT_SLUGS.join(', ');
+  const prompt = `You are a classifier. Given a user's goal and optional context, pick exactly ONE life-context slug that best fits their goal.
+
+ALLOWED SLUGS (output only one word from this list): ${slugList}
+
+USER GOAL: "${outcome}"
+CONTEXT: "${context || 'None'}"
+
+Rules:
+- career: job, work, business, professional advancement
+- growth: self-improvement, habits, confidence, learning, transformation
+- health: body, fitness, wellness, mental health, sleep, diet
+- finance: money, income, savings, debt, side income, financial goals
+- relationship: love, partnership, family, friends, connection, dating
+- spirituality: purpose, meaning, meditation, alignment, higher self, cosmic
+- general: catch-all when goal does not clearly fit above; broad life goals
+
+Reply with ONLY the one slug, nothing else. No quotes, no explanation.`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You output only a single word: one of the allowed slugs. No other text.' },
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.2,
+      max_tokens: 20
+    });
+    const raw = (response.choices[0].message.content || '').trim().toLowerCase();
+    const slug = raw.replace(/["'\s.]/g, '');
+    if (LIFE_CONTEXT_SLUGS.includes(slug)) return slug;
+    return DEFAULT_LIFE_CONTEXT;
+  } catch (err) {
+    console.error('classifyLifeContext error:', err);
+    return DEFAULT_LIFE_CONTEXT;
   }
 }
 
@@ -1453,16 +1505,25 @@ async function awardPoints(userId, points, source, description) {
   }
 }
 
+// Build public URL for affirmation image (bucket: affirmation-images, path: {life_context}/{index}.jpg)
+function buildAffirmationImageUrl(lifeContext, imageIndex) {
+  const base = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+  if (!base) return null;
+  const slug = LIFE_CONTEXT_SLUGS.includes(lifeContext) ? lifeContext : DEFAULT_LIFE_CONTEXT;
+  const idx = Math.abs(parseInt(imageIndex, 10) % AFFIRMATION_IMAGE_COUNT_PER_CONTEXT);
+  return `${base}/storage/v1/object/public/${AFFIRMATION_IMAGES_BUCKET}/${slug}/${idx}.jpg`;
+}
+
 // API endpoint to get today's affirmation for a timeline
 app.get('/api/today-affirmation/:generationId', requireAuth, async (req, res) => {
   try {
     const { generationId } = req.params;
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    
-    // First, get the timeline to access the affirmations array
+
+    // Get timeline with affirmations, created_at, and life_context
     const { data: timeline, error: timelineError } = await supabase
       .from('action_timeline_generations')
-      .select('timeline_affirmations')
+      .select('timeline_affirmations, created_at, life_context')
       .eq('id', generationId)
       .eq('user_id', req.user.id)
       .single();
@@ -1471,6 +1532,25 @@ app.get('/api/today-affirmation/:generationId', requireAuth, async (req, res) =>
       console.error('Error fetching timeline:', timelineError);
       return res.status(404).json({ error: 'Timeline not found' });
     }
+
+    const lifeContext = LIFE_CONTEXT_SLUGS.includes(timeline.life_context)
+      ? timeline.life_context
+      : DEFAULT_LIFE_CONTEXT;
+    const timelineCreatedDate = new Date(timeline.created_at);
+    const daysSinceCreation = Math.floor((new Date() - timelineCreatedDate) / (1000 * 60 * 60 * 24));
+    const imageIndex = daysSinceCreation % AFFIRMATION_IMAGE_COUNT_PER_CONTEXT;
+    const imageUrl = buildAffirmationImageUrl(lifeContext, imageIndex);
+
+    // Helper to build today's response with life_context and image_url
+    const buildResponse = (affirmationIndex, affirmationText, affirmed, date) => ({
+      affirmation_index: affirmationIndex,
+      affirmation_text: affirmationText,
+      affirmed,
+      date,
+      life_context: lifeContext,
+      image_index: imageIndex,
+      image_url: imageUrl
+    });
 
     // Check if we already have today's affirmation in the database
     const { data: existingAffirmation, error: checkError } = await supabase
@@ -1482,29 +1562,14 @@ app.get('/api/today-affirmation/:generationId', requireAuth, async (req, res) =>
       .single();
 
     if (existingAffirmation && !checkError) {
-      // Return existing affirmation
-      return res.json({
-        affirmation_index: existingAffirmation.affirmation_index,
-        affirmation_text: existingAffirmation.affirmation_text,
-        affirmed: existingAffirmation.affirmed,
-        date: existingAffirmation.date
-      });
+      return res.json(buildResponse(
+        existingAffirmation.affirmation_index,
+        existingAffirmation.affirmation_text,
+        existingAffirmation.affirmed,
+        existingAffirmation.date
+      ));
     }
 
-    // Calculate today's affirmation index based on days since timeline creation
-    const { data: timelineData, error: timelineDataError } = await supabase
-      .from('action_timeline_generations')
-      .select('created_at')
-      .eq('id', generationId)
-      .single();
-
-    if (timelineDataError) {
-      console.error('Error fetching timeline data:', timelineDataError);
-      return res.status(500).json({ error: 'Failed to fetch timeline data' });
-    }
-
-    const timelineCreatedDate = new Date(timelineData.created_at);
-    const daysSinceCreation = Math.floor((new Date() - timelineCreatedDate) / (1000 * 60 * 60 * 24));
     const affirmationIndex = daysSinceCreation % timeline.timeline_affirmations.length;
     const affirmationText = timeline.timeline_affirmations[affirmationIndex];
 
@@ -1518,7 +1583,8 @@ app.get('/api/today-affirmation/:generationId', requireAuth, async (req, res) =>
         affirmation_text: affirmationText,
         date: today,
         affirmed: false,
-        points_awarded: 0
+        points_awarded: 0,
+        image_index: imageIndex
       })
       .select()
       .single();
@@ -1528,13 +1594,7 @@ app.get('/api/today-affirmation/:generationId', requireAuth, async (req, res) =>
       return res.status(500).json({ error: 'Failed to create daily affirmation' });
     }
 
-    res.json({
-      affirmation_index: affirmationIndex,
-      affirmation_text: affirmationText,
-      affirmed: false,
-      date: today
-    });
-
+    res.json(buildResponse(affirmationIndex, affirmationText, false, today));
   } catch (error) {
     console.error('Get today affirmation error:', error);
     res.status(500).json({ error: 'Failed to get today\'s affirmation' });
@@ -1801,6 +1861,15 @@ app.post('/api/generate-timeline', requireAuth, timelineGenerationLimiter, async
       });
     }
     
+    // Classify goal into life-context for affirmation images
+    let lifeContext = DEFAULT_LIFE_CONTEXT;
+    try {
+      lifeContext = await classifyLifeContext(outcome, context || '');
+      console.log(`Life context classified: ${lifeContext}`);
+    } catch (classifyErr) {
+      console.error('Life context classification failed, using default:', classifyErr);
+    }
+
     // Create a temporary generation ID for unsaved timelines
     const tempGenerationId = `temp_${Date.now()}_${req.user.id}`;
     
@@ -1847,6 +1916,7 @@ app.post('/api/generate-timeline', requireAuth, timelineGenerationLimiter, async
       actions: actions,
       timelineAffirmations: timelineAffirmations,
       tempGenerationId: tempGenerationId,
+      life_context: lifeContext,
       summary: {
         actionsGenerated: actions.length,
         calculationTime: calculationTime,

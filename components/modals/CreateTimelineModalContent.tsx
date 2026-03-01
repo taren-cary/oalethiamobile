@@ -166,6 +166,7 @@ export function CreateTimelineModalContent() {
         timelineAffirmations: data.timelineAffirmations ?? [],
         summary: data.summary ?? {},
         tempGenerationId: data.tempGenerationId ?? '',
+        life_context: data.life_context ?? undefined,
       });
       router.replace({ pathname: '/modal', params: { type: 'results' } });
     } catch {
