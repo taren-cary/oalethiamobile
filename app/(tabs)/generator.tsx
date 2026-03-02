@@ -6,7 +6,8 @@
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
-import React, { useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -20,7 +21,12 @@ import { AffirmationCard } from '@/components/affirmation-card';
 import { PressHoldGenerateButton } from '@/components/press-hold-generate/PressHoldGenerateButton';
 import { GlassButton, GlassCard, GlassTextInput } from '@/components/glass';
 import { TimelineActionCard } from '@/components/timeline-action-card';
+import { useAuth } from '@/contexts/AuthContext';
+import { useGenerationResult } from '@/contexts/GenerationResultContext';
+import { apiPost } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { glassBorderRadius, glassColors, glassSpacing, glassTypography } from '@/theme';
+import type { TimelineAction } from '@/types/timeline';
 
 type Approach = 'conservative' | 'balanced' | 'aggressive';
 
@@ -39,9 +45,17 @@ const MOCK_ACTIONS = [
 ];
 const MOCK_AFFIRMATION = "I am aligned with the right timing. Each step I take is supported by the cosmos.";
 const MOCK_GOAL = "Hit $10,000 per month in revenue";
-const MOCK_TODAY = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+const MOCK_TODAY = new Date().toLocaleDateString('en-US', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
 
 export default function GeneratorScreen() {
+  const router = useRouter();
+  const { user, session } = useAuth();
+  const { setResult } = useGenerationResult();
   const insets = useSafeAreaInsets();
   const [outcome, setOutcome] = useState('');
   const [context, setContext] = useState('');
@@ -49,10 +63,129 @@ export default function GeneratorScreen() {
   const [approach, setApproach] = useState<Approach>('balanced');
   const [timeframe, setTimeframe] = useState(3);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Birth data loaded from profile; users don't edit it here.
+  const [birthDate, setBirthDate] = useState('');
+  const [birthTime, setBirthTime] = useState('12:00');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
 
   const lottieRef = useRef<LottieView | null>(null);
 
   const paddingBottom = insets.bottom + 100;
+
+  // Load birth chart for signed-in user (same logic as CreateTimelineModalContent),
+  // so we can call /api/generate-timeline without exposing birth fields on this screen.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('birth_charts')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (cancelled || !data) return;
+        if (data.birth_date) {
+          setBirthDate(new Date(data.birth_date).toISOString().split('T')[0]);
+        }
+        if (data.birth_time) setBirthTime(data.birth_time);
+        if (data.latitude != null) setLatitude(Number(data.latitude));
+        if (data.longitude != null) setLongitude(Number(data.longitude));
+      } catch {
+        // ignore; we'll validate before generating
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const handleGenerate = useCallback(async () => {
+    if (loading) return;
+    setFormError('');
+
+    if (!user || !session) {
+      setFormError('Please sign in to generate a timeline.');
+      return;
+    }
+
+    if (!outcome.trim()) {
+      setFormError('Please describe what you want to achieve.');
+      return;
+    }
+
+    if (!birthDate || latitude == null || longitude == null) {
+      setFormError(
+        'Birth information is incomplete. Please finish onboarding or update your profile in Settings.'
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiPost('/api/generate-timeline', session, {
+        outcome: outcome.trim(),
+        context: context.trim() || undefined,
+        availableResources: availableResources.trim() || '',
+        preferredApproach: approach,
+        timeframe,
+        birthDate,
+        birthTime: birthTime || '12:00',
+        latitude,
+        longitude,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = (data.error || '').toString().toLowerCase();
+        if (res.status === 400 && (msg.includes('credit') || msg.includes('insufficient'))) {
+          setFormError(
+            "You've used all your free credits. Upgrade to Premium or buy credits to generate more timelines."
+          );
+        } else {
+          setFormError(data.error || 'Generation failed. Please try again.');
+        }
+        return;
+      }
+
+      const data = await res.json();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setResult({
+        outcome: outcome.trim(),
+        context: context.trim(),
+        timeframe,
+        actions: (data.actions ?? []) as TimelineAction[],
+        timelineAffirmations: data.timelineAffirmations ?? [],
+        summary: data.summary ?? {},
+        tempGenerationId: data.tempGenerationId ?? '',
+        life_context: data.life_context ?? undefined,
+      });
+      // Overwrites any previous unsaved result; if user hadn't saved, it's lost, matching the desired behavior.
+      router.push({ pathname: '/modal', params: { type: 'results' } });
+    } catch {
+      setFormError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    user,
+    session,
+    loading,
+    outcome,
+    context,
+    availableResources,
+    approach,
+    timeframe,
+    birthDate,
+    birthTime,
+    latitude,
+    longitude,
+    setResult,
+    router,
+  ]);
 
   return (
     <View style={styles.container}>
@@ -144,16 +277,14 @@ export default function GeneratorScreen() {
             💡 Shorter timeframes create tighter, more focused action plans. Longer ones spread actions out.
           </Text>
 
-          {/* Dev-only: press-and-hold toggles a loading state; later this will wrap the real generate call. */}
           <PressHoldGenerateButton
-            onComplete={() => {
-              if (loading) return;
-              setLoading(true);
-              // Mock: stop loading after a short delay until real API wiring is added.
-              setTimeout(() => setLoading(false), 3000);
-            }}
+            onComplete={handleGenerate}
             loading={loading}
           />
+
+          {formError ? (
+            <Text style={styles.errorText}>{formError}</Text>
+          ) : null}
         </GlassCard>
 
         {loading && (
@@ -245,6 +376,11 @@ const styles = StyleSheet.create({
     color: glassColors.text.secondary,
     marginTop: 0,
     marginBottom: glassSpacing.xs,
+  },
+  errorText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.error,
+    marginTop: glassSpacing.sm,
   },
   label: {
     ...glassTypography.labelSmall,
