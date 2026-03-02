@@ -24,6 +24,7 @@ import { useCallback, useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { OnboardingScreen } from '@/components/onboarding';
 import { BirthDatePickerScreen } from '@/components/birth-date-picker/BirthDatePickerScreen';
@@ -114,84 +115,86 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <View style={{ flex: 1 }}>
-        <StatusBar style="light" />
-        {showAnimatedSplash && (
-          <AnimatedSplashScreen
-            onFinish={() => setShowAnimatedSplash(false)}
-          />
-        )}
-        {!showAnimatedSplash && (
-          <OnboardingProvider>
-            <AuthProvider>
-              {!onboardingComplete && (
-                <OnboardingScreen onFinish={handleOnboardingFinish} />
-              )}
-              {onboardingComplete && !birthDateDone && (
-                <BirthDatePickerScreen
-                  onDone={handleBirthDateDone}
-                  onSkip={handleSkipBirthInfo}
-                />
-              )}
-              {onboardingComplete && birthDateDone && !birthTimeDone && (
-                <BirthTimePickerScreen
-                  onDone={handleBirthTimeDone}
-                  onSkip={handleSkipBirthInfo}
-                />
-              )}
-              {onboardingComplete && birthDateDone && birthTimeDone && !birthLocationDone && (
-                <BirthLocationPickerScreen
-                  onDone={handleBirthLocationDone}
-                  onSkip={handleSkipBirthInfo}
-                />
-              )}
-              {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && !authDone && (
-                <AuthScreen onDone={handleAuthDone} />
-              )}
-              {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && authDone && (
-                <ThemeProvider
-                  value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
-                >
-                  <PointsRefreshProvider>
-                    <LevelUpProvider>
-                      <GenerationResultProvider>
-                        <ShareProvider>
-                          <Stack>
-                            <Stack.Screen
-                              name="(tabs)"
-                              options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
-                              name="timeline/[id]"
-                              options={{
-                                headerShown: true,
-                                title: 'Timeline',
-                                headerBackTitle: 'Logs',
-                                headerStyle: { backgroundColor: '#0a0a0f' },
-                                headerTintColor: '#ffffff',
-                                headerShadowVisible: false,
-                              }}
-                            />
-                            <Stack.Screen
-                              name="modal"
-                              options={{
-                                presentation: 'modal',
-                                headerShown: false,
-                              }}
-                            />
-                          </Stack>
-                          <LevelUpModalContent />
-                        </ShareProvider>
-                      </GenerationResultProvider>
-                    </LevelUpProvider>
-                  </PointsRefreshProvider>
-                </ThemeProvider>
-              )}
-            </AuthProvider>
-          </OnboardingProvider>
-        )}
-      </View>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <View style={{ flex: 1 }}>
+          <StatusBar style="light" />
+          {showAnimatedSplash && (
+            <AnimatedSplashScreen
+              onFinish={() => setShowAnimatedSplash(false)}
+            />
+          )}
+          {!showAnimatedSplash && (
+            <OnboardingProvider>
+              <AuthProvider>
+                {!onboardingComplete && (
+                  <OnboardingScreen onFinish={handleOnboardingFinish} />
+                )}
+                {onboardingComplete && !birthDateDone && (
+                  <BirthDatePickerScreen
+                    onDone={handleBirthDateDone}
+                    onSkip={handleSkipBirthInfo}
+                  />
+                )}
+                {onboardingComplete && birthDateDone && !birthTimeDone && (
+                  <BirthTimePickerScreen
+                    onDone={handleBirthTimeDone}
+                    onSkip={handleSkipBirthInfo}
+                  />
+                )}
+                {onboardingComplete && birthDateDone && birthTimeDone && !birthLocationDone && (
+                  <BirthLocationPickerScreen
+                    onDone={handleBirthLocationDone}
+                    onSkip={handleSkipBirthInfo}
+                  />
+                )}
+                {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && !authDone && (
+                  <AuthScreen onDone={handleAuthDone} />
+                )}
+                {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && authDone && (
+                  <ThemeProvider
+                    value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}
+                  >
+                    <PointsRefreshProvider>
+                      <LevelUpProvider>
+                        <GenerationResultProvider>
+                          <ShareProvider>
+                            <Stack>
+                              <Stack.Screen
+                                name="(tabs)"
+                                options={{ headerShown: false }}
+                              />
+                              <Stack.Screen
+                                name="timeline/[id]"
+                                options={{
+                                  headerShown: true,
+                                  title: 'Timeline',
+                                  headerBackTitle: 'Logs',
+                                  headerStyle: { backgroundColor: '#0a0a0f' },
+                                  headerTintColor: '#ffffff',
+                                  headerShadowVisible: false,
+                                }}
+                              />
+                              <Stack.Screen
+                                name="modal"
+                                options={{
+                                  presentation: 'modal',
+                                  headerShown: false,
+                                }}
+                              />
+                            </Stack>
+                            <LevelUpModalContent />
+                          </ShareProvider>
+                        </GenerationResultProvider>
+                      </LevelUpProvider>
+                    </PointsRefreshProvider>
+                  </ThemeProvider>
+                )}
+              </AuthProvider>
+            </OnboardingProvider>
+          )}
+        </View>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

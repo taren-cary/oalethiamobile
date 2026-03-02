@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AffirmationCard } from '@/components/affirmation-card';
+import { CountdownTimer } from '@/components/CountdownTimer';
 import { GlassButton } from '@/components/glass';
 import { TimelineActionCard } from '@/components/timeline-action-card';
 import type { TimelineActionLink } from '@/components/timeline-action-card';
@@ -22,6 +23,7 @@ import {
   DEFAULT_IMAGE_COUNT_PER_CONTEXT,
   normalizeLifeContext,
 } from '@/lib/affirmationLifeContexts';
+import { parseActionDate } from '@/lib/parseActionDate';
 import { apiPost } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import type { TimelineAction } from '@/types/timeline';
@@ -167,6 +169,25 @@ export function ResultsModalContent() {
 
   const affirmationText = result.timelineAffirmations[0] ?? '';
 
+  // Mirror web logic: visible actions exclude skipped; next action is first incomplete among them.
+  const visibleActions = result.actions.filter(
+    (_, index) => !skippedActions.includes(index)
+  );
+
+  const nextActionIndex = visibleActions.findIndex(
+    (_, index) =>
+      !completedActions.includes(result.actions.indexOf(visibleActions[index]))
+  );
+
+  const nextAction =
+    nextActionIndex >= 0 ? visibleActions[nextActionIndex] : null;
+  const nextActionOriginalIndex = nextAction
+    ? result.actions.indexOf(nextAction)
+    : -1;
+  const nextActionTargetDate = nextAction
+    ? parseActionDate(nextAction.date)
+    : null;
+
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
@@ -183,27 +204,69 @@ export function ResultsModalContent() {
           <Text style={styles.outcomeText}>{result.outcome}</Text>
         </View>
 
+        {nextAction && nextActionTargetDate && (
+          <View style={styles.nextActionBlock}>
+            <View style={styles.nextActionHeaderRow}>
+              <Text style={styles.nextActionLabel}>Next action</Text>
+              <CountdownTimer targetDate={nextActionTargetDate} compact />
+            </View>
+            <View style={styles.actionCardWrapper}>
+              <TimelineActionCard
+                date={nextAction.date}
+                action={nextAction.action}
+                transit={nextAction.transit}
+                strategy={mapStrategy(nextAction)}
+                links={
+                  mapActionToLinks(nextAction).length > 0
+                    ? mapActionToLinks(nextAction)
+                    : undefined
+                }
+                completed={completedActions.includes(nextActionOriginalIndex)}
+                onToggleComplete={() => {
+                  const idx = nextActionOriginalIndex;
+                  const next = completedActions.includes(idx)
+                    ? completedActions.filter((i) => i !== idx)
+                    : [...completedActions, idx];
+                  setCompletedActions(next);
+                }}
+                onSkip={() =>
+                  setSkippedActions((s) => [...s, nextActionOriginalIndex])
+                }
+                staggerIndex={0}
+                reduceMotion={false}
+              />
+            </View>
+          </View>
+        )}
+
         {result.actions.slice(0, 5).map((action, index) => {
           if (skippedActions.includes(index)) return null;
+          // Skip rendering the next action again in the list.
+          if (nextAction && index === nextActionOriginalIndex) return null;
           return (
-            <TimelineActionCard
-              key={index}
-              date={action.date}
-              action={action.action}
-              transit={action.transit}
-              strategy={mapStrategy(action)}
-              links={mapActionToLinks(action).length > 0 ? mapActionToLinks(action) : undefined}
-              completed={completedActions.includes(index)}
-              onToggleComplete={() => {
-                const next = completedActions.includes(index)
-                  ? completedActions.filter((i) => i !== index)
-                  : [...completedActions, index];
-                setCompletedActions(next);
-              }}
-              onSkip={() => setSkippedActions((s) => [...s, index])}
-              staggerIndex={index}
-              reduceMotion={false}
-            />
+            <View key={index} style={styles.actionCardWrapper}>
+              <TimelineActionCard
+                date={action.date}
+                action={action.action}
+                transit={action.transit}
+                strategy={mapStrategy(action)}
+                links={
+                  mapActionToLinks(action).length > 0
+                    ? mapActionToLinks(action)
+                    : undefined
+                }
+                completed={completedActions.includes(index)}
+                onToggleComplete={() => {
+                  const next = completedActions.includes(index)
+                    ? completedActions.filter((i) => i !== index)
+                    : [...completedActions, index];
+                  setCompletedActions(next);
+                }}
+                onSkip={() => setSkippedActions((s) => [...s, index])}
+                staggerIndex={index}
+                reduceMotion={false}
+              />
+            </View>
           );
         })}
         {result.actions.length > 5 && (
@@ -274,6 +337,22 @@ const styles = StyleSheet.create({
   outcomeText: {
     ...glassTypography.h4,
     color: glassColors.text.primary,
+  },
+  nextActionBlock: {
+    marginBottom: glassSpacing.lg,
+  },
+  nextActionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: glassSpacing.sm,
+  },
+  nextActionLabel: {
+    ...glassTypography.labelSmall,
+    color: glassColors.accent,
+  },
+  actionCardWrapper: {
+    marginBottom: glassSpacing.md,
   },
   moreText: {
     ...glassTypography.bodySmall,
