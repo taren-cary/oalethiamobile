@@ -259,27 +259,12 @@ export default function HomeScreen() {
     fetchProfile();
   }, [invalidateAt, fetchLevel, fetchProfile, useDevHomeData]);
 
-  /** When returning to Home (e.g. from timeline detail), reload progress so next-action cards stay in sync. */
+  /** When returning to Home (e.g. from timeline detail), refetch timelines, progress, and today's affirmations so everything stays in sync. */
   useFocusEffect(
     useCallback(() => {
-      if (useDevHomeData || !recentTimelines?.length) return;
-      (async () => {
-        const results = await Promise.all(
-          recentTimelines.map((t) => getProgress(t.id))
-        );
-        const progressMap: Record<
-          string,
-          { completed: number[]; skipped: number[] }
-        > = {};
-        recentTimelines.forEach((t, i) => {
-          progressMap[t.id] = {
-            completed: results[i].completed,
-            skipped: results[i].skipped,
-          };
-        });
-        setProgressByTimelineId(progressMap);
-      })();
-    }, [useDevHomeData, recentTimelines])
+      if (useDevHomeData || !user || !session) return;
+      fetchRecentTimelinesAndAffirmations();
+    }, [useDevHomeData, user, session, fetchRecentTimelinesAndAffirmations])
   );
 
   const handleAffirmForTimeline = useCallback(

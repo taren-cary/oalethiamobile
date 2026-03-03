@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useShare } from '@/contexts/ShareContext';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -13,14 +13,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AffirmationCard } from '@/components/affirmation-card';
 import { GlassCard } from '@/components/glass';
-import { ShareButton } from '@/components/share-button';
 import { TimelineActionCard } from '@/components/timeline-action-card';
 import type { TimelineActionLink } from '@/components/timeline-action-card';
+import { NextActionCard } from '@/components/next-action-card/NextActionCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
 import { getProgress, saveProgress } from '@/lib/progress-storage';
+import { getMockHomeData, getNextActionItem, HOME_DEV_MODE } from '@/lib/mockHomeData';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline, TimelineAction } from '@/types/timeline';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
@@ -46,6 +47,8 @@ export default function TimelineDetailScreen() {
   const { setLevelUp } = useLevelUp();
   const { invalidate } = usePointsRefresh();
 
+  const useDevTimeline = HOME_DEV_MODE && !user;
+
   const [timeline, setTimeline] = useState<SavedTimeline | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,6 +61,7 @@ export default function TimelineDetailScreen() {
   const [affirmLoading, setAffirmLoading] = useState(false);
 
   const loadTimeline = useCallback(async () => {
+    if (useDevTimeline) return;
     if (!id || !user) return;
     try {
       const { data, error } = await supabase
@@ -77,7 +81,7 @@ export default function TimelineDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [id, user]);
+  }, [id, user, useDevTimeline]);
 
   const loadProgress = useCallback(async () => {
     if (!id) return;
@@ -90,6 +94,7 @@ export default function TimelineDetailScreen() {
   }, [id]);
 
   const loadTodayAffirmation = useCallback(async () => {
+    if (useDevTimeline) return;
     if (!id || !session) return;
     try {
       const res = await apiGet(`/api/today-affirmation/${id}`, session);
@@ -106,16 +111,45 @@ export default function TimelineDetailScreen() {
         setAffirmationText(timeline.timeline_affirmations[idx]);
       }
     }
-  }, [id, session, timeline?.timeline_affirmations, affirmationIndex]);
+  }, [id, session, timeline?.timeline_affirmations, affirmationIndex, useDevTimeline]);
 
   useEffect(() => {
-    loadTimeline();
+    if (!useDevTimeline) {
+      loadTimeline();
+    }
     loadProgress();
-  }, [loadTimeline, loadProgress]);
+  }, [loadTimeline, loadProgress, useDevTimeline]);
 
   useEffect(() => {
+    if (useDevTimeline) return;
     if (timeline && user && session) loadTodayAffirmation();
-  }, [timeline, user, session, loadTodayAffirmation]);
+  }, [timeline, user, session, loadTodayAffirmation, useDevTimeline]);
+
+  useEffect(() => {
+    if (!useDevTimeline || !id) return;
+    const mock = getMockHomeData();
+    const timelines: SavedTimeline[] = [
+      mock.latestTimeline,
+      ...mock.recentTimelinesWithNextActions.map((item) => item.timeline),
+    ];
+    const selected =
+      timelines.find((t) => t.id === id) ?? timelines[0];
+    setTimeline(selected);
+
+    const affirmSource =
+      mock.todayAffirmations.find((a) => a.timelineId === selected.id) ??
+      mock.todayAffirmations[0];
+
+    if (affirmSource) {
+      setAffirmationIndex(affirmSource.affirmationIndex);
+      setAffirmationText(affirmSource.affirmationText);
+      setAffirmationImageUrl(affirmSource.imageUrl ?? null);
+      setAffirmed(affirmSource.affirmed);
+    }
+
+    setLoading(false);
+    setError(null);
+  }, [useDevTimeline, id]);
 
   useEffect(() => {
     if (timeline?.timeline_affirmations?.length && !affirmationText) {
@@ -144,6 +178,19 @@ export default function TimelineDetailScreen() {
   );
 
   const handleAffirm = useCallback(async () => {
+    if (useDevTimeline) {
+      if (!id || affirmLoading) return;
+      setAffirmLoading(true);
+      const today = new Date().toDateString();
+      setAffirmed(true);
+      saveProgress(id, {
+        affirmationIndex,
+        affirmationDate: today,
+        affirmedDate: today,
+      });
+      setTimeout(() => setAffirmLoading(false), 300);
+      return;
+    }
     if (!session || !id || affirmLoading) return;
     setAffirmLoading(true);
     const today = new Date().toDateString();
@@ -180,10 +227,22 @@ export default function TimelineDetailScreen() {
     } finally {
       setAffirmLoading(false);
     }
-  }, [id, session, affirmationIndex, affirmationText, timeline, affirmLoading, setLevelUp, invalidate]);
+  }, [id, session, affirmationIndex, affirmationText, timeline, affirmLoading, setLevelUp, invalidate, useDevTimeline]);
 
   const visibleActions =
     timeline?.actions?.filter((_, i) => !skippedActions.includes(i)) ?? [];
+
+  const devNextAction = useMemo(() => {
+    if (!useDevTimeline || !timeline) return null;
+    return getNextActionItem(timeline, completedActions, skippedActions);
+  }, [useDevTimeline, timeline, completedActions, skippedActions]);
+
+  const realNextAction = useMemo(() => {
+    if (useDevTimeline || !timeline) return null;
+    return getNextActionItem(timeline, completedActions, skippedActions);
+  }, [useDevTimeline, timeline, completedActions, skippedActions]);
+
+  const nextActionForCard = useDevTimeline ? devNextAction : realNextAction;
   const todayFormatted = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -235,6 +294,27 @@ export default function TimelineDetailScreen() {
         <Text style={styles.outcomeText}>{timeline.outcome}</Text>
       </View>
 
+      {nextActionForCard && (
+        <NextActionCard
+          timelineId={timeline.id}
+          outcome={timeline.outcome}
+          action={nextActionForCard.nextAction}
+          actionIndex={nextActionForCard.nextActionOriginalIndex}
+          completed={nextActionForCard.completed.includes(
+            nextActionForCard.nextActionOriginalIndex
+          )}
+          onToggleComplete={() =>
+            toggleComplete(nextActionForCard.nextActionOriginalIndex)
+          }
+          onSkip={() => skipAction(nextActionForCard.nextActionOriginalIndex)}
+          onViewTimeline={() => {}}
+          pulse
+          reduceMotion={false}
+          showOutcomeLabel={false}
+          showViewTimelineButton={false}
+        />
+      )}
+
       {timeline.actions.map((action, index) => {
         if (skippedActions.includes(index)) return null;
         return (
@@ -266,13 +346,6 @@ export default function TimelineDetailScreen() {
               /* Poster image is captured and shared by AffirmationCard */
             }}
           />
-          <View style={styles.shareRow}>
-            <ShareButton
-              shareMessage={affirmationText}
-              shareTitle="Today's affirmation"
-              accessibilityLabel="Share affirmation"
-            />
-          </View>
         </View>
       ) : null}
     </ScrollView>
@@ -322,9 +395,5 @@ const styles = StyleSheet.create({
   },
   affirmationSection: {
     gap: glassSpacing.md,
-  },
-  shareRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
   },
 });

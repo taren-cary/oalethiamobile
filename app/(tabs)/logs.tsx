@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/empty-state';
 import { GlassCard } from '@/components/glass';
 import { SkeletonCard } from '@/components/skeleton-loader/SkeletonLoader';
 import { useAuth } from '@/contexts/AuthContext';
+import { getMockHomeData, HOME_DEV_MODE } from '@/lib/mockHomeData';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline } from '@/types/timeline';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
@@ -62,6 +63,9 @@ export default function LogsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+
+  const useDevLogsData = HOME_DEV_MODE && !user;
+  const mockData = useDevLogsData ? getMockHomeData() : null;
 
   const [timelines, setTimelines] = useState<SavedTimeline[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,6 +139,50 @@ export default function LogsScreen() {
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
+
+  if (useDevLogsData) {
+    const devTimelines: SavedTimeline[] =
+      mockData?.recentTimelinesWithNextActions.map((item) => item.timeline) ?? [];
+
+    return (
+      <View style={styles.container}>
+        <Image
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
+          style={styles.backgroundImage}
+          contentFit="cover"
+          transition={300}
+        />
+        <FlatList
+          data={devTimelines}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingTop, paddingBottom },
+          ]}
+          style={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <Text style={styles.title}>
+              Logs
+            </Text>
+          }
+          renderItem={({ item }) => (
+            <TimelineLogCard
+              timeline={item}
+              onPress={() =>
+                router.push({
+                  pathname: '/timeline/[id]',
+                  params: { id: item.id },
+                })
+              }
+              onDelete={() => {}}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      </View>
+    );
+  }
 
   if (!user) {
     return (

@@ -53,6 +53,8 @@ export interface NextActionCardProps {
   onViewTimeline: () => void;
   pulse?: boolean;
   reduceMotion?: boolean;
+  showOutcomeLabel?: boolean;
+  showViewTimelineButton?: boolean;
 }
 
 export function NextActionCard({
@@ -66,6 +68,8 @@ export function NextActionCard({
   onViewTimeline,
   pulse = true,
   reduceMotion = false,
+  showOutcomeLabel = true,
+  showViewTimelineButton = true,
 }: NextActionCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -139,9 +143,11 @@ export function NextActionCard({
           </View>
           <CountdownTimer targetDate={targetDate} compact />
         </View>
-        <Text style={styles.outcomeLabel} numberOfLines={1}>
-          Goal: {outcome}
-        </Text>
+        {showOutcomeLabel && (
+          <Text style={styles.outcomeLabel} numberOfLines={1}>
+            Goal: {outcome}
+          </Text>
+        )}
         <View style={styles.transitBox}>
           <Text style={styles.transitLabel}>Your Cosmic Support:</Text>
           <Text style={styles.transitText}>{action.transit}</Text>
@@ -200,14 +206,16 @@ export function NextActionCard({
           >
             <Text style={styles.skipText}>Skip</Text>
           </Pressable>
-          <Pressable
-            onPress={onViewTimeline}
-            style={({ pressed }) => [styles.viewTimelineButton, pressed && styles.pressed]}
-            accessibilityLabel="View full timeline"
-          >
-            <Text style={styles.viewTimelineText}>View timeline</Text>
-            <Ionicons name="chevron-forward" size={16} color={glassColors.accent} />
-          </Pressable>
+          {showViewTimelineButton && (
+            <Pressable
+              onPress={onViewTimeline}
+              style={({ pressed }) => [styles.viewTimelineButton, pressed && styles.pressed]}
+              accessibilityLabel="View full timeline"
+            >
+              <Text style={styles.viewTimelineText}>View timeline</Text>
+              <Ionicons name="chevron-forward" size={16} color={glassColors.accent} />
+            </Pressable>
+          )}
         </View>
       </View>
     </View>
