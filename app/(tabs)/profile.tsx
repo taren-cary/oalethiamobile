@@ -1,4 +1,6 @@
+import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -28,6 +30,7 @@ import {
   getMockHomeData,
   HOME_DEV_MODE,
 } from '@/lib/mockHomeData';
+import { supabase, supabaseUrl } from '@/lib/supabase';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
 
 const LEVEL_BADGE_SOURCES: Record<number, any> = {
@@ -81,6 +84,8 @@ export default function ProfileScreen() {
   } | null>(null);
   const [leaderboardPreview, setLeaderboardPreview] = useState<LeaderboardEntry[]>([]);
   const [leaderboardPreviewLoading, setLeaderboardPreviewLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (useDevProfileData) {
@@ -207,6 +212,72 @@ export default function ProfileScreen() {
     fetchLeaderboardPreview();
   }, [fetchProfile, fetchLevel, fetchSubscription, fetchLeaderboardPreview]);
 
+  const fetchAvatarUrl = useCallback(async () => {
+    if (useDevProfileData || !user) {
+      setAvatarUrl(null);
+      return;
+    }
+    try {
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('avatar_url')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setAvatarUrl(data?.avatar_url ?? null);
+    } catch {
+      setAvatarUrl(null);
+    }
+  }, [user, useDevProfileData]);
+
+  useEffect(() => {
+    fetchAvatarUrl();
+  }, [fetchAvatarUrl]);
+
+  const pickAndUploadAvatar = useCallback(async () => {
+    if (!user || avatarUploading) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission needed',
+        'Please allow photo library access to set a profile picture.'
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const uri = result.assets[0].uri;
+    setAvatarUploading(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const path = `${user.id}/avatar.jpg`;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+      if (uploadError) throw uploadError;
+      const publicUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${path}`;
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+      if (updateError) throw updateError;
+      setAvatarUrl(`${publicUrl}${publicUrl.includes('?') ? '&' : '?'}t=${Date.now()}`);
+    } catch (e) {
+      Alert.alert(
+        'Upload failed',
+        e instanceof Error ? e.message : 'Could not set profile picture. Try again.'
+      );
+    } finally {
+      setAvatarUploading(false);
+    }
+  }, [user, avatarUploading]);
+
   useEffect(() => {
     if (useDevProfileData || invalidateAt <= 0) {
       return;
@@ -271,9 +342,30 @@ export default function ProfileScreen() {
 
         {/* Avatar + welcome + username */}
         <View style={styles.headerBlock}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarLargeInitial}>{displayInitial}</Text>
-          </View>
+          <Pressable
+            onPress={!useDevProfileData && user && !avatarUploading ? pickAndUploadAvatar : undefined}
+            style={({ pressed }) => [
+              styles.avatarLarge,
+              pressed && !avatarUploading && styles.avatarPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={avatarUploading ? 'Uploading profile picture' : 'Change profile picture'}
+          >
+            {avatarUrl ? (
+              <Image
+                source={{ uri: avatarUrl }}
+                style={styles.avatarImage}
+                contentFit="cover"
+              />
+            ) : (
+              <Text style={styles.avatarLargeInitial}>{displayInitial}</Text>
+            )}
+            {avatarUploading && (
+              <View style={styles.avatarUploadOverlay}>
+                <ActivityIndicator size="small" color={glassColors.primary} />
+              </View>
+            )}
+          </Pressable>
           <Text style={styles.headerGreeting}>Welcome back</Text>
           <Text style={styles.headerUsername} numberOfLines={1}>
             {displayEmail}
@@ -535,6 +627,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: glassColors.glass.medium,
     marginBottom: glassSpacing.sm,
+    overflow: 'hidden',
+  },
+  avatarPressed: {
+    opacity: 0.9,
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  avatarUploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarLargeInitial: {
     ...glassTypography.h3,
