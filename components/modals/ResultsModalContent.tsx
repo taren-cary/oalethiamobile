@@ -202,6 +202,7 @@ export function ResultsModalContent() {
         <View style={styles.outcomeBlock}>
           <Text style={styles.outcomeLabel}>Goal</Text>
           <Text style={styles.outcomeText}>{result.outcome}</Text>
+          <Text style={styles.aiNote}>This is AI generated content.</Text>
         </View>
 
         {nextAction && nextActionTargetDate && (
@@ -337,6 +338,11 @@ const styles = StyleSheet.create({
   outcomeText: {
     ...glassTypography.h4,
     color: glassColors.text.primary,
+  },
+  aiNote: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: 6,
   },
   nextActionBlock: {
     marginBottom: glassSpacing.lg,

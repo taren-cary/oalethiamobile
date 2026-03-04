@@ -305,6 +305,7 @@ export default function GeneratorScreen() {
           <View style={styles.outcomeBlock}>
             <Text style={styles.outcomeLabel}>Goal</Text>
             <Text style={styles.outcomeText}>{MOCK_GOAL}</Text>
+            <Text style={styles.aiNote}>This is AI generated content.</Text>
           </View>
 
           {MOCK_ACTIONS.map((action, index) => (
@@ -333,7 +334,6 @@ export default function GeneratorScreen() {
           />
 
           <GlassButton title="Save timeline" onPress={() => {}} style={[styles.resultBtn, styles.resultBtnPrimary]} accessibilityLabel="Save timeline (mock)" />
-          <GlassButton title="View in Logs" onPress={() => {}} style={styles.resultBtn} accessibilityLabel="View in Logs (mock)" />
           <GlassButton title="Generate another" onPress={() => {}} variant="secondary" accessibilityLabel="Generate another (mock)" />
         </View>
       </ScrollView>
@@ -451,6 +451,11 @@ const styles = StyleSheet.create({
   outcomeText: {
     ...glassTypography.h4,
     color: glassColors.text.primary,
+  },
+  aiNote: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: 6,
   },
   lottieContainer: {
     alignItems: 'center',

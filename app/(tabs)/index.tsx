@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -669,17 +668,15 @@ export default function HomeScreen() {
           <GlassCard>
             <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>
             <Text style={styles.noAffirmationBody}>
-              Generate your first cosmic timeline on the Generate tab to unlock
-              personalized daily affirmations.
+              Generate a timeline on the Generate tab to unlock personalized
+              daily affirmations.
             </Text>
             <View style={styles.noAffirmationActions}>
               <GlassButton
-                title="Create timeline"
-                onPress={() =>
-                  router.push({ pathname: '/modal', params: { type: 'create-timeline' } })
-                }
-                accessibilityLabel="Create your first timeline"
-                accessibilityHint="Opens the timeline creation form"
+                title="Go to Generate"
+                onPress={() => router.push('/generator')}
+                accessibilityLabel="Go to Generate tab"
+                accessibilityHint="Opens the Generate tab to create a timeline"
               />
             </View>
           </GlassCard>
@@ -687,17 +684,15 @@ export default function HomeScreen() {
           <GlassCard>
             <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>
             <Text style={styles.noAffirmationBody}>
-              Generate your first cosmic timeline on the Generate tab to unlock
-              personalized daily affirmations.
+              Generate a timeline on the Generate tab to unlock personalized
+              daily affirmations.
             </Text>
             <View style={styles.noAffirmationActions}>
               <GlassButton
-                title="Create timeline"
-                onPress={() =>
-                  router.push({ pathname: '/modal', params: { type: 'create-timeline' } })
-                }
-                accessibilityLabel="Create your first timeline"
-                accessibilityHint="Opens the timeline creation form"
+                title="Go to Generate"
+                onPress={() => router.push('/generator')}
+                accessibilityLabel="Go to Generate tab"
+                accessibilityHint="Opens the Generate tab to create a timeline"
               />
             </View>
           </GlassCard>
@@ -753,29 +748,22 @@ export default function HomeScreen() {
               )
             )}
           </View>
-        ) : !useDevHomeData && latestTimeline ? (
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: '/timeline/[id]',
-                params: { id: latestTimeline.id },
-              })
-            }
-            style={({ pressed }) => [pressed && styles.pressed]}
-            accessibilityRole="button"
-            accessibilityLabel={`Open timeline: ${latestTimeline.outcome}`}
-          >
-            <GlassCard>
-              <Text style={styles.previewLabel}>Active timeline</Text>
-              <Text style={styles.previewGoal} numberOfLines={2}>
-                {latestTimeline.outcome}
-              </Text>
-              <Text style={styles.previewMeta}>
-                {latestTimeline.actions?.length ?? 0} actions · Created{' '}
-                {new Date(latestTimeline.created_at).toLocaleDateString()}
-              </Text>
-            </GlassCard>
-          </Pressable>
+        ) : !useDevHomeData ? (
+          <GlassCard>
+            <Text style={styles.noAffirmationTitle}>No actions yet</Text>
+            <Text style={styles.noAffirmationBody}>
+              Generate a timeline on the Generate tab to get your first actions
+              and start making progress.
+            </Text>
+            <View style={styles.noAffirmationActions}>
+              <GlassButton
+                title="Go to Generate"
+                onPress={() => router.push('/generator')}
+                accessibilityLabel="Go to Generate tab"
+                accessibilityHint="Opens the Generate tab to create a timeline"
+              />
+            </View>
+          </GlassCard>
         ) : null}
       </ScrollView>
     </View>
@@ -878,23 +866,6 @@ const styles = StyleSheet.create({
   topStatValue: {
     ...glassTypography.label,
     color: glassColors.text.primary,
-  },
-  pressed: {
-    opacity: 0.9,
-  },
-  previewLabel: {
-    ...glassTypography.labelSmall,
-    color: glassColors.text.tertiary,
-    marginBottom: 4,
-  },
-  previewGoal: {
-    ...glassTypography.h5,
-    color: glassColors.text.primary,
-    marginBottom: 4,
-  },
-  previewMeta: {
-    ...glassTypography.bodySmall,
-    color: glassColors.text.tertiary,
   },
   noAffirmationTitle: {
     ...glassTypography.h5,

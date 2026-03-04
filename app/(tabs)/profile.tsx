@@ -20,6 +20,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet } from '@/lib/api';
 import {
+  generateFakeLeaderboard,
+  LEVEL_NAMES,
+  type LeaderboardEntry,
+} from '@/lib/mockLeaderboardData';
+import {
   getMockHomeData,
   HOME_DEV_MODE,
 } from '@/lib/mockHomeData';
@@ -74,6 +79,8 @@ export default function ProfileScreen() {
     isFree?: boolean;
     status?: string;
   } | null>(null);
+  const [leaderboardPreview, setLeaderboardPreview] = useState<LeaderboardEntry[]>([]);
+  const [leaderboardPreviewLoading, setLeaderboardPreviewLoading] = useState(true);
 
   const fetchProfile = useCallback(async () => {
     if (useDevProfileData) {
@@ -156,11 +163,49 @@ export default function ProfileScreen() {
     }
   }, [session, useDevProfileData]);
 
+  const fetchLeaderboardPreview = useCallback(async () => {
+    if (useDevProfileData) {
+      setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
+      setLeaderboardPreviewLoading(false);
+      return;
+    }
+    if (!session) {
+      setLeaderboardPreviewLoading(false);
+      return;
+    }
+    try {
+      const res = await apiGet('/api/leaderboard?limit=3', session);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const formatted: LeaderboardEntry[] = data.slice(0, 3).map((entry: any, index: number) => ({
+            rank: index + 1,
+            userId: entry.userId ?? entry.user_id ?? `user-${index}`,
+            username: entry.username ?? `user_${String(entry.userId ?? entry.user_id ?? index).slice(0, 8)}`,
+            lifetimePoints: entry.lifetimePoints ?? entry.lifetime_points ?? 0,
+            level: entry.level ?? 1,
+            levelName: entry.levelName ?? LEVEL_NAMES[entry.level ?? 1] ?? 'Unknown',
+          }));
+          setLeaderboardPreview(formatted);
+        } else {
+          setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
+        }
+      } else {
+        setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
+      }
+    } catch {
+      setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
+    } finally {
+      setLeaderboardPreviewLoading(false);
+    }
+  }, [session, useDevProfileData]);
+
   useEffect(() => {
     fetchProfile();
     fetchLevel();
     fetchSubscription();
-  }, [fetchProfile, fetchLevel, fetchSubscription]);
+    fetchLeaderboardPreview();
+  }, [fetchProfile, fetchLevel, fetchSubscription, fetchLeaderboardPreview]);
 
   useEffect(() => {
     if (useDevProfileData || invalidateAt <= 0) {
@@ -290,6 +335,49 @@ export default function ProfileScreen() {
             </Text>
           </GlassCard>
         )}
+
+        <GlassCard cardStyle={styles.leaderboardCard}>
+          <View style={styles.leaderboardCardHeader}>
+            <Text style={styles.leaderboardCardTitle}>Leaderboard</Text>
+          </View>
+          <View style={styles.settingsRowDivider} />
+          {leaderboardPreviewLoading ? (
+            <ActivityIndicator size="small" color={glassColors.primary} style={styles.leaderboardLoader} />
+          ) : (
+            <>
+              {leaderboardPreview.length === 0 ? (
+                <Text style={styles.leaderboardEmptyText}>
+                  No one on the leaderboard yet. Be the first by affirming daily!
+                </Text>
+              ) : (
+                leaderboardPreview.map((entry, index) => (
+                  <View key={entry.userId} style={styles.leaderboardPreviewRow}>
+                    <Text style={styles.leaderboardRank}>
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                    </Text>
+                    <Text style={styles.leaderboardUsername} numberOfLines={1}>
+                      {entry.username}
+                    </Text>
+                    <Text style={styles.leaderboardPts}>
+                      {entry.lifetimePoints.toLocaleString()} pts
+                    </Text>
+                  </View>
+                ))
+              )}
+              <View style={styles.settingsRowDivider} />
+              <Pressable
+                style={({ pressed }) => [styles.subRow, pressed && styles.settingsRowPressed]}
+                onPress={() => router.push('/leaderboard')}
+                accessibilityRole="button"
+                accessibilityLabel="View full leaderboard"
+              >
+                <Ionicons name="podium-outline" size={20} color={glassColors.primary} />
+                <Text style={styles.settingsRowLabel}>View full leaderboard</Text>
+                <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+              </Pressable>
+            </>
+          )}
+        </GlassCard>
 
         {subscriptionLoading ? (
           <ActivityIndicator size="small" color={glassColors.primary} />
@@ -532,6 +620,49 @@ const styles = StyleSheet.create({
   streakValue: {
     ...glassTypography.h4,
     color: glassColors.text.primary,
+  },
+  leaderboardCard: {
+    paddingVertical: 0,
+    paddingHorizontal: glassSpacing.md,
+    overflow: 'hidden',
+  },
+  leaderboardCardHeader: {
+    paddingVertical: glassSpacing.md,
+  },
+  leaderboardCardTitle: {
+    ...glassTypography.h5,
+    color: glassColors.text.primary,
+  },
+  leaderboardLoader: {
+    paddingVertical: glassSpacing.lg,
+  },
+  leaderboardEmptyText: {
+    ...glassTypography.body,
+    color: glassColors.text.secondary,
+    textAlign: 'center',
+    paddingVertical: glassSpacing.md,
+    paddingHorizontal: glassSpacing.sm,
+  },
+  leaderboardPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: glassSpacing.sm,
+    gap: glassSpacing.sm,
+  },
+  leaderboardRank: {
+    width: 28,
+    textAlign: 'center',
+    fontSize: 18,
+  },
+  leaderboardUsername: {
+    flex: 1,
+    ...glassTypography.label,
+    color: glassColors.text.primary,
+    minWidth: 0,
+  },
+  leaderboardPts: {
+    ...glassTypography.labelSmall,
+    color: glassColors.accent,
   },
   subCard: {
     paddingVertical: 0,
