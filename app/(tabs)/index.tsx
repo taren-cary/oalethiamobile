@@ -407,10 +407,10 @@ export default function HomeScreen() {
     [carouselData, useDevHomeData, affirmedTimelineIdsDev]
   );
 
-  /** Dev: next-action items derived from mock data + local complete/skip state. */
+  /** Dev: next-action items derived from mock data + local complete/skip state, ordered by next action date (closest first). */
   const devNextActionItems = useMemo((): NextActionItem[] => {
     if (!useDevHomeData || !mockData?.recentTimelinesWithNextActions) return [];
-    return mockData.recentTimelinesWithNextActions
+    const items = mockData.recentTimelinesWithNextActions
       .map((item) => {
         const progress = devNextActionProgress[item.timeline.id];
         const completed = progress?.completed ?? item.completed;
@@ -418,6 +418,8 @@ export default function HomeScreen() {
         return getNextActionItem(item.timeline, completed, skipped);
       })
       .filter((x): x is NextActionItem => x != null);
+    items.sort((a, b) => (a.nextAction.date < b.nextAction.date ? -1 : a.nextAction.date > b.nextAction.date ? 1 : 0));
+    return items;
   }, [useDevHomeData, mockData?.recentTimelinesWithNextActions, devNextActionProgress]);
 
   const handleDevNextActionToggleComplete = useCallback((timelineId: string, actionIndex: number) => {
@@ -440,10 +442,10 @@ export default function HomeScreen() {
     });
   }, []);
 
-  /** Signed-in: next-action items from recentTimelines + progressByTimelineId. */
+  /** Signed-in: next-action items from recentTimelines + progressByTimelineId, ordered by next action date (closest first). */
   const realNextActionItems = useMemo((): NextActionItem[] => {
     if (useDevHomeData || !recentTimelines?.length) return [];
-    return recentTimelines
+    const items = recentTimelines
       .map((timeline) => {
         const progress = progressByTimelineId[timeline.id];
         const completed = progress?.completed ?? [];
@@ -451,6 +453,8 @@ export default function HomeScreen() {
         return getNextActionItem(timeline, completed, skipped);
       })
       .filter((x): x is NextActionItem => x != null);
+    items.sort((a, b) => (a.nextAction.date < b.nextAction.date ? -1 : a.nextAction.date > b.nextAction.date ? 1 : 0));
+    return items;
   }, [useDevHomeData, recentTimelines, progressByTimelineId]);
 
   const handleRealNextActionToggleComplete = useCallback(
