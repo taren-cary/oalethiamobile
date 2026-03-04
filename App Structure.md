@@ -42,10 +42,11 @@
 
 - Purpose: User account & stats
 - Content:
-- Points, level, badge
+- Profile picture
+- Points, level, badge(show these in a unique way than what we show on the home page)
 - Affirmation streak
 - Subscription status
-- Settings (notifications, account)
+- Settings (notifications, account, and everything thing else that the iOS rules require)
 - Sign out
 - Navigation: Bottom tab (last icon)
 

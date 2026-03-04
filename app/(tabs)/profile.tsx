@@ -1,8 +1,11 @@
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,12 +14,41 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton, GlassCard } from '@/components/glass';
-import { PointsLevelBadge } from '@/components/points-level-badge';
+import { Ionicons } from '@expo/vector-icons';
 import type { LevelData } from '@/components/points-level-badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet } from '@/lib/api';
+import {
+  getMockHomeData,
+  HOME_DEV_MODE,
+} from '@/lib/mockHomeData';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
+
+const LEVEL_BADGE_SOURCES: Record<number, any> = {
+  1: require('@/assets/badges/level1.svg'),
+  2: require('@/assets/badges/level2.svg'),
+  3: require('@/assets/badges/level3.svg'),
+  4: require('@/assets/badges/level4.svg'),
+  5: require('@/assets/badges/level5.svg'),
+  6: require('@/assets/badges/level6.svg'),
+  7: require('@/assets/badges/level7.svg'),
+  8: require('@/assets/badges/level8.svg'),
+  9: require('@/assets/badges/level9.svg'),
+  10: require('@/assets/badges/level10.svg'),
+  11: require('@/assets/badges/level11.svg'),
+  12: require('@/assets/badges/level12.svg'),
+};
+
+function getLevelBadgeSource(level: number) {
+  if (level <= 1) {
+    return LEVEL_BADGE_SOURCES[1];
+  }
+  if (level >= 12) {
+    return LEVEL_BADGE_SOURCES[12];
+  }
+  return LEVEL_BADGE_SOURCES[level] ?? LEVEL_BADGE_SOURCES[1];
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -24,11 +56,19 @@ export default function ProfileScreen() {
   const { user, session, signOut } = useAuth();
   const { invalidateAt } = usePointsRefresh();
 
-  const [profileLoading, setProfileLoading] = useState(true);
-  const [levelLoading, setLevelLoading] = useState(true);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
-  const [streak, setStreak] = useState(0);
-  const [levelData, setLevelData] = useState<LevelData | null>(null);
+  // Phase 1: dev/mock view for design & UX
+  const useDevProfileData = HOME_DEV_MODE && !user;
+  const mockData = useDevProfileData ? getMockHomeData() : null;
+
+  const [profileLoading, setProfileLoading] = useState(!useDevProfileData);
+  const [levelLoading, setLevelLoading] = useState(!useDevProfileData);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(!useDevProfileData);
+  const [streak, setStreak] = useState(
+    useDevProfileData && mockData ? mockData.streak : 0
+  );
+  const [levelData, setLevelData] = useState<LevelData | null>(
+    useDevProfileData && mockData ? mockData.levelData : null
+  );
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     tier?: { name?: string };
     isFree?: boolean;
@@ -36,6 +76,10 @@ export default function ProfileScreen() {
   } | null>(null);
 
   const fetchProfile = useCallback(async () => {
+    if (useDevProfileData) {
+      setProfileLoading(false);
+      return;
+    }
     if (!session) {
       setProfileLoading(false);
       return;
@@ -51,9 +95,13 @@ export default function ProfileScreen() {
     } finally {
       setProfileLoading(false);
     }
-  }, [session]);
+  }, [session, useDevProfileData]);
 
   const fetchLevel = useCallback(async () => {
+    if (useDevProfileData) {
+      setLevelLoading(false);
+      return;
+    }
     if (!session) {
       setLevelLoading(false);
       return;
@@ -77,9 +125,18 @@ export default function ProfileScreen() {
     } finally {
       setLevelLoading(false);
     }
-  }, [session]);
+  }, [session, useDevProfileData]);
 
   const fetchSubscription = useCallback(async () => {
+    if (useDevProfileData) {
+      setSubscriptionStatus({
+        isFree: true,
+        status: 'active',
+        tier: { name: 'Free' },
+      });
+      setSubscriptionLoading(false);
+      return;
+    }
     if (!session) {
       setSubscriptionLoading(false);
       return;
@@ -97,7 +154,7 @@ export default function ProfileScreen() {
     } finally {
       setSubscriptionLoading(false);
     }
-  }, [session]);
+  }, [session, useDevProfileData]);
 
   useEffect(() => {
     fetchProfile();
@@ -106,16 +163,19 @@ export default function ProfileScreen() {
   }, [fetchProfile, fetchLevel, fetchSubscription]);
 
   useEffect(() => {
+    if (useDevProfileData || invalidateAt <= 0) {
+      return;
+    }
     if (invalidateAt > 0) {
       fetchLevel();
       fetchProfile();
     }
-  }, [invalidateAt, fetchLevel, fetchProfile]);
+  }, [invalidateAt, fetchLevel, fetchProfile, useDevProfileData]);
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
 
-  if (!user) {
+  if (!user && !useDevProfileData) {
     return (
       <View style={styles.container}>
         <Image
@@ -138,6 +198,14 @@ export default function ProfileScreen() {
     );
   }
 
+  const displayEmail =
+    user?.email ?? (useDevProfileData ? 'demo@oalethia.app' : 'Signed in');
+  const displayInitial = displayEmail.charAt(0).toUpperCase();
+
+  const handleSettingsRowPress = useCallback((label: string) => {
+    Alert.alert('Dev view', `${label} – not implemented yet.`);
+  }, []);
+
   return (
     <View style={styles.container}>
       <Image
@@ -156,6 +224,62 @@ export default function ProfileScreen() {
       >
         <Text style={styles.title}>Profile</Text>
 
+        {/* Avatar + welcome + username */}
+        <View style={styles.headerBlock}>
+          <View style={styles.avatarLarge}>
+            <Text style={styles.avatarLargeInitial}>{displayInitial}</Text>
+          </View>
+          <Text style={styles.headerGreeting}>Welcome back</Text>
+          <Text style={styles.headerUsername} numberOfLines={1}>
+            {displayEmail}
+          </Text>
+        </View>
+
+        {/* Level / badge card with actual badge art, then streak, then subscription */}
+        {levelLoading ? (
+          <ActivityIndicator size="small" color={glassColors.primary} />
+        ) : levelData ? (
+          <GlassCard cardStyle={styles.levelCard}>
+            <View style={styles.levelRow}>
+              <View style={styles.levelBadgeWrapper}>
+                <Image
+                  source={getLevelBadgeSource(levelData.level)}
+                  style={styles.levelBadgeImage}
+                  contentFit="contain"
+                />
+              </View>
+              <View style={styles.levelTextBlock}>
+                <Text style={styles.levelTitle} numberOfLines={1}>
+                  Level {levelData.level}: {levelData.levelName}
+                </Text>
+                {!levelData.isMaxLevel ? (
+                  <>
+                    <View style={styles.levelProgressTrack}>
+                      <LinearGradient
+                        colors={glassColors.progressBar}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={[
+                          styles.levelProgressFill,
+                          { width: `${levelData.progressPercent}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.levelPointsToNext}>
+                      {levelData.pointsNeeded.toLocaleString()} points to next level
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.levelMaxLabel}>Max level achieved</Text>
+                )}
+                <Text style={styles.levelLifetimePoints}>
+                  {levelData.lifetimePoints.toLocaleString()} pts total
+                </Text>
+              </View>
+            </View>
+          </GlassCard>
+        ) : null}
+
         {profileLoading ? (
           <ActivityIndicator size="small" color={glassColors.primary} />
         ) : (
@@ -167,46 +291,117 @@ export default function ProfileScreen() {
           </GlassCard>
         )}
 
-        {levelLoading ? (
-          <ActivityIndicator size="small" color={glassColors.primary} />
-        ) : levelData ? (
-          <PointsLevelBadge levelData={levelData} />
-        ) : null}
-
         {subscriptionLoading ? (
           <ActivityIndicator size="small" color={glassColors.primary} />
         ) : (
           <GlassCard cardStyle={styles.subCard}>
-            <Text style={styles.subLabel}>Subscription</Text>
-            <Text style={styles.subValue}>
-              {subscriptionStatus?.isFree
-                ? 'Free'
-                : subscriptionStatus?.tier?.name ?? 'Free'}
-            </Text>
+            <View style={styles.subHeader}>
+              <Text style={styles.subLabel}>Subscription & Billing</Text>
+              <Text style={styles.subValue}>
+                {subscriptionStatus?.isFree
+                  ? 'Free plan'
+                  : subscriptionStatus?.tier?.name ?? 'Free plan'}
+              </Text>
+            </View>
+            <View style={styles.subRowDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.subRow, pressed && styles.settingsRowPressed]}
+              onPress={() => router.push({ pathname: '/modal', params: { type: 'subscription' } })}
+              accessibilityRole="button"
+              accessibilityLabel="Upgrade to Premium"
+            >
+              <Ionicons name="star-outline" size={20} color={glassColors.primary} />
+              <Text style={styles.settingsRowLabel}>Upgrade to Premium</Text>
+              <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+            </Pressable>
+            <View style={styles.settingsRowDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.subRow, pressed && styles.settingsRowPressed]}
+              onPress={() => router.push({ pathname: '/modal', params: { type: 'credits' } })}
+              accessibilityRole="button"
+              accessibilityLabel="Buy credits"
+            >
+              <Ionicons name="wallet-outline" size={20} color={glassColors.text.primary} />
+              <Text style={styles.settingsRowLabel}>Buy credits</Text>
+              <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+            </Pressable>
+            <View style={styles.settingsRowDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.subRow, pressed && styles.settingsRowPressed]}
+              onPress={() => handleSettingsRowPress('Restore Purchases')}
+              accessibilityRole="button"
+              accessibilityLabel="Restore previous in-app purchases"
+            >
+              <Ionicons name="refresh-outline" size={20} color={glassColors.text.primary} />
+              <Text style={styles.settingsRowLabel}>Restore Purchases</Text>
+              <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+            </Pressable>
           </GlassCard>
         )}
 
-        <GlassCard cardStyle={styles.settingsCard}>
-          <Text style={styles.settingsLabel}>Settings</Text>
-          <Text style={styles.settingsHint}>
-            Notifications and account settings (placeholder).
-          </Text>
+        <GlassCard cardStyle={styles.settingsListCard}>
+          <View style={styles.settingsCardHeader}>
+            <Text style={styles.settingsCardTitle}>Settings</Text>
+          </View>
+          <View style={styles.settingsRowDivider} />
+          <Pressable
+            style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
+            onPress={() => handleSettingsRowPress('Notifications')}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <Ionicons name="notifications-outline" size={20} color={glassColors.text.primary} />
+            <Text style={styles.settingsRowLabel}>Notifications</Text>
+            <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+          </Pressable>
+          <View style={styles.settingsRowDivider} />
+          <Pressable
+            style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
+            onPress={() => handleSettingsRowPress('Privacy Policy')}
+            accessibilityRole="button"
+            accessibilityLabel="Privacy Policy"
+          >
+            <Ionicons name="shield-outline" size={20} color={glassColors.text.primary} />
+            <Text style={styles.settingsRowLabel}>Privacy Policy</Text>
+            <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+          </Pressable>
+          <View style={styles.settingsRowDivider} />
+          <Pressable
+            style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
+            onPress={() => handleSettingsRowPress('Terms of Service')}
+            accessibilityRole="button"
+            accessibilityLabel="Terms of Service"
+          >
+            <Ionicons name="document-text-outline" size={20} color={glassColors.text.primary} />
+            <Text style={styles.settingsRowLabel}>Terms of Service</Text>
+            <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+          </Pressable>
+          <View style={styles.settingsRowDivider} />
+          <Pressable
+            style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
+            onPress={() => handleSettingsRowPress('Contact support')}
+            accessibilityRole="button"
+            accessibilityLabel="Contact support"
+          >
+            <Ionicons name="mail-outline" size={20} color={glassColors.text.primary} />
+            <Text style={styles.settingsRowLabel}>Contact support</Text>
+            <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+          </Pressable>
+          <View style={styles.settingsRowDivider} />
+          <Pressable
+            style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
+            onPress={() => handleSettingsRowPress('Delete account')}
+            accessibilityRole="button"
+            accessibilityLabel="Delete account"
+          >
+            <Ionicons name="trash-outline" size={20} color={glassColors.error} />
+            <Text style={[styles.settingsRowLabel, styles.settingsRowLabelDanger]}>
+              Delete account
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+          </Pressable>
         </GlassCard>
 
-        <GlassButton
-          title="Upgrade"
-          onPress={() => router.push({ pathname: '/modal', params: { type: 'subscription' } })}
-          variant="secondary"
-          style={styles.button}
-          accessibilityLabel="Upgrade to Premium"
-        />
-        <GlassButton
-          title="Buy credits"
-          onPress={() => router.push({ pathname: '/modal', params: { type: 'credits' } })}
-          variant="secondary"
-          style={styles.button}
-          accessibilityLabel="Buy credits"
-        />
         <GlassButton
           title="Sign out"
           onPress={() => signOut()}
@@ -239,6 +434,88 @@ const styles = StyleSheet.create({
     color: glassColors.text.primary,
     marginBottom: glassSpacing.sm,
   },
+  headerBlock: {
+    alignItems: 'center',
+    marginBottom: glassSpacing.lg,
+    marginTop: glassSpacing.sm,
+  },
+  avatarLarge: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: glassColors.glass.medium,
+    marginBottom: glassSpacing.sm,
+  },
+  avatarLargeInitial: {
+    ...glassTypography.h3,
+    color: glassColors.text.primary,
+  },
+  headerGreeting: {
+    ...glassTypography.labelSmall,
+    color: glassColors.text.tertiary,
+    marginBottom: 2,
+  },
+  headerUsername: {
+    ...glassTypography.h4,
+    color: glassColors.text.primary,
+  },
+  levelCard: {
+    paddingVertical: glassSpacing.sm,
+    paddingHorizontal: glassSpacing.md,
+  },
+  levelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  levelBadgeWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: glassSpacing.md,
+  },
+  levelBadgeImage: {
+    width: '100%',
+    height: '100%',
+  },
+  levelTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  levelTitle: {
+    ...glassTypography.label,
+    color: glassColors.text.primary,
+  },
+  levelProgressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: glassColors.glass.light,
+    overflow: 'hidden',
+    marginTop: glassSpacing.sm,
+  },
+  levelProgressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  levelPointsToNext: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: glassSpacing.xs,
+  },
+  levelMaxLabel: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: glassSpacing.xs,
+  },
+  levelLifetimePoints: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: glassSpacing.sm,
+  },
   body: {
     ...glassTypography.body,
     color: glassColors.text.secondary,
@@ -257,28 +534,66 @@ const styles = StyleSheet.create({
     color: glassColors.text.primary,
   },
   subCard: {
+    paddingVertical: 0,
+    paddingHorizontal: glassSpacing.md,
+    overflow: 'hidden',
+  },
+  subHeader: {
     paddingVertical: glassSpacing.md,
   },
   subLabel: {
     ...glassTypography.labelSmall,
     color: glassColors.text.tertiary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   subValue: {
     ...glassTypography.h4,
     color: glassColors.text.primary,
   },
-  settingsCard: {
+  subRowDivider: {
+    height: 1,
+    backgroundColor: glassColors.glassBorder.subtle,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: glassSpacing.md,
+    minHeight: 44,
+    gap: glassSpacing.sm,
+  },
+  settingsListCard: {
+    paddingVertical: 0,
+    paddingHorizontal: glassSpacing.md,
+    overflow: 'hidden',
+  },
+  settingsCardHeader: {
     paddingVertical: glassSpacing.md,
   },
-  settingsLabel: {
+  settingsCardTitle: {
+    ...glassTypography.h5,
+    color: glassColors.text.primary,
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: glassSpacing.md,
+    minHeight: 44,
+    gap: glassSpacing.sm,
+  },
+  settingsRowPressed: {
+    opacity: 0.8,
+  },
+  settingsRowLabel: {
+    flex: 1,
     ...glassTypography.label,
     color: glassColors.text.primary,
-    marginBottom: 4,
   },
-  settingsHint: {
-    ...glassTypography.bodySmall,
-    color: glassColors.text.tertiary,
+  settingsRowLabelDanger: {
+    color: glassColors.error,
+  },
+  settingsRowDivider: {
+    height: 1,
+    backgroundColor: glassColors.glassBorder.subtle,
   },
   button: {
     alignSelf: 'stretch',
