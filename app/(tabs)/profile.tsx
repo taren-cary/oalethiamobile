@@ -86,6 +86,7 @@ export default function ProfileScreen() {
   const [leaderboardPreviewLoading, setLeaderboardPreviewLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [accountDeleting, setAccountDeleting] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (useDevProfileData) {
@@ -318,9 +319,74 @@ export default function ProfileScreen() {
     user?.email ?? (useDevProfileData ? 'demo@oalethia.app' : 'Signed in');
   const displayInitial = displayEmail.charAt(0).toUpperCase();
 
-  const handleSettingsRowPress = useCallback((label: string) => {
-    Alert.alert('Dev view', `${label} – not implemented yet.`);
-  }, []);
+  const handleDeleteAccount = useCallback(() => {
+    if (!user || !session || accountDeleting) {
+      if (!user || !session) {
+        Alert.alert('Not signed in', 'You need to be signed in to delete your account.');
+      }
+      return;
+    }
+
+    Alert.alert(
+      'Delete your account?',
+      'This will permanently delete your account, timelines, points, birth data, and all related activity. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: async () => {
+            setAccountDeleting(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            try {
+              const { error } = await supabase.functions.invoke('delete-account', {
+                method: 'POST',
+                body: {},
+              });
+              if (error) {
+                Alert.alert(
+                  'Deletion failed',
+                  'We could not delete your account right now. Please try again in a moment.'
+                );
+                setAccountDeleting(false);
+                return;
+              }
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert(
+                'Account deleted',
+                'Your account and all associated data have been deleted.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      signOut();
+                    },
+                  },
+                ]
+              );
+            } catch {
+              Alert.alert(
+                'Deletion failed',
+                'We could not delete your account right now. Please check your connection and try again.'
+              );
+              setAccountDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [user, session, accountDeleting, signOut]);
+
+  const handleSettingsRowPress = useCallback(
+    (label: string) => {
+      if (label === 'Delete account') {
+        handleDeleteAccount();
+        return;
+      }
+      Alert.alert('Dev view', `${label} – not implemented yet.`);
+    },
+    [handleDeleteAccount]
+  );
 
   return (
     <View style={styles.container}>
@@ -569,16 +635,25 @@ export default function ProfileScreen() {
           </Pressable>
           <View style={styles.settingsRowDivider} />
           <Pressable
-            style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
-            onPress={() => handleSettingsRowPress('Delete account')}
+            style={({ pressed }) => [
+              styles.settingsRow,
+              pressed && styles.settingsRowPressed,
+              accountDeleting && styles.settingsRowDisabled,
+            ]}
+            onPress={accountDeleting ? undefined : () => handleSettingsRowPress('Delete account')}
             accessibilityRole="button"
             accessibilityLabel="Delete account"
+            accessibilityState={{ disabled: accountDeleting }}
           >
             <Ionicons name="trash-outline" size={20} color={glassColors.error} />
             <Text style={[styles.settingsRowLabel, styles.settingsRowLabelDanger]}>
               Delete account
             </Text>
-            <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+            {accountDeleting ? (
+              <ActivityIndicator size="small" color={glassColors.text.tertiary} />
+            ) : (
+              <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+            )}
           </Pressable>
         </GlassCard>
 
@@ -827,6 +902,9 @@ const styles = StyleSheet.create({
   },
   settingsRowLabelDanger: {
     color: glassColors.error,
+  },
+  settingsRowDisabled: {
+    opacity: 0.6,
   },
   settingsRowDivider: {
     height: 1,

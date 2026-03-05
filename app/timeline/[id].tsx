@@ -85,13 +85,32 @@ export default function TimelineDetailScreen() {
 
   const loadProgress = useCallback(async () => {
     if (!id) return;
+    if (session && !useDevTimeline) {
+      try {
+        const res = await apiGet(`/api/action-progress/${id}`, session);
+        if (res.ok) {
+          const data = await res.json();
+          const progress: Array<{ action_index: number; completed: boolean; skipped: boolean }> =
+            data.progress ?? [];
+          const completed = progress.filter((p) => p.completed).map((p) => p.action_index);
+          const skipped = progress.filter((p) => p.skipped).map((p) => p.action_index);
+          setCompletedActions(completed);
+          setSkippedActions(skipped);
+          await saveProgress(id, { completed, skipped });
+        }
+      } catch {
+        // fall through to local
+      }
+    }
     const p = await getProgress(id);
-    setCompletedActions(p.completed);
-    setSkippedActions(p.skipped);
+    if (!session || useDevTimeline) {
+      setCompletedActions(p.completed);
+      setSkippedActions(p.skipped);
+    }
     setAffirmationIndex(p.affirmationIndex);
     const today = new Date().toDateString();
     setAffirmed(p.affirmedDate === today);
-  }, [id]);
+  }, [id, session, useDevTimeline]);
 
   const loadTodayAffirmation = useCallback(async () => {
     if (useDevTimeline) return;
@@ -158,23 +177,66 @@ export default function TimelineDetailScreen() {
   }, [timeline, affirmationIndex, affirmationText]);
 
   const toggleComplete = useCallback(
-    (index: number) => {
+    async (index: number) => {
       const next = completedActions.includes(index)
         ? completedActions.filter((i) => i !== index)
         : [...completedActions, index];
       setCompletedActions(next);
-      saveProgress(id!, { completed: next });
+      await saveProgress(id!, { completed: next });
+      if (session && !useDevTimeline && id) {
+        try {
+          const res = await apiPost(
+            '/api/action-progress',
+            session,
+            {
+              generationId: id,
+              actionIndex: index,
+              completed: next.includes(index),
+              skipped: false,
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (data.levelUp) {
+              setLevelUp({
+                newLevel: data.levelUp.newLevel,
+                levelName: data.levelUp.levelName,
+                previousLevel: data.levelUp.previousLevel,
+              });
+            }
+            invalidate();
+          }
+        } catch {
+          // keep local state; points may not have been awarded
+        }
+      }
     },
-    [id, completedActions]
+    [id, session, completedActions, useDevTimeline, setLevelUp, invalidate]
   );
 
   const skipAction = useCallback(
-    (index: number) => {
+    async (index: number) => {
       const next = [...skippedActions, index];
       setSkippedActions(next);
-      saveProgress(id!, { skipped: next });
+      await saveProgress(id!, { skipped: next });
+      if (session && !useDevTimeline && id) {
+        try {
+          await apiPost(
+            '/api/action-progress',
+            session,
+            {
+              generationId: id,
+              actionIndex: index,
+              completed: false,
+              skipped: true,
+            }
+          );
+        } catch {
+          // keep local state
+        }
+      }
     },
-    [id, skippedActions]
+    [id, session, skippedActions, useDevTimeline]
   );
 
   const handleAffirm = useCallback(async () => {

@@ -194,14 +194,29 @@ export default function HomeScreen() {
       setRecentTimelines(asSaved);
       setLatestTimeline(asSaved[0]);
 
-      const progressResults = await Promise.all(
-        asSaved.map((t) => getProgress(t.id))
-      );
       const progressMap: Record<string, { completed: number[]; skipped: number[] }> = {};
-      asSaved.forEach((t, i) => {
-        const p = progressResults[i];
-        progressMap[t.id] = { completed: p.completed, skipped: p.skipped };
-      });
+      await Promise.all(
+        asSaved.map(async (t) => {
+          try {
+            const res = await apiGet(`/api/action-progress/${t.id}`, session);
+            if (res.ok) {
+              const data = await res.json();
+              const progress: Array<{ action_index: number; completed: boolean; skipped: boolean }> =
+                data.progress ?? [];
+              progressMap[t.id] = {
+                completed: progress.filter((p) => p.completed).map((p) => p.action_index),
+                skipped: progress.filter((p) => p.skipped).map((p) => p.action_index),
+              };
+              await saveProgress(t.id, progressMap[t.id]);
+              return;
+            }
+          } catch {
+            // fall through to local
+          }
+          const p = await getProgress(t.id);
+          progressMap[t.id] = { completed: p.completed, skipped: p.skipped };
+        })
+      );
       setProgressByTimelineId(progressMap);
 
       const results = await Promise.all(
@@ -468,8 +483,35 @@ export default function HomeScreen() {
         [timelineId]: { ...cur, completed },
       }));
       await saveProgress(timelineId, { completed });
+      if (session) {
+        try {
+          const res = await apiPost(
+            '/api/action-progress',
+            session,
+            {
+              generationId: timelineId,
+              actionIndex,
+              completed: completed.includes(actionIndex),
+              skipped: false,
+            }
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (data.levelUp) {
+              setLevelUp({
+                newLevel: data.levelUp.newLevel,
+                levelName: data.levelUp.levelName,
+                previousLevel: data.levelUp.previousLevel,
+              });
+            }
+            invalidate();
+          }
+        } catch {
+          // keep local state
+        }
+      }
     },
-    [progressByTimelineId]
+    [progressByTimelineId, session, setLevelUp, invalidate]
   );
 
   const handleRealNextActionSkip = useCallback(
@@ -483,8 +525,24 @@ export default function HomeScreen() {
         [timelineId]: { ...cur, skipped },
       }));
       await saveProgress(timelineId, { skipped });
+      if (session) {
+        try {
+          await apiPost(
+            '/api/action-progress',
+            session,
+            {
+              generationId: timelineId,
+              actionIndex,
+              completed: false,
+              skipped: true,
+            }
+          );
+        } catch {
+          // keep local state
+        }
+      }
     },
-    [progressByTimelineId]
+    [progressByTimelineId, session]
   );
 
   const handleDevCarouselAffirm = useCallback((timelineId: string) => {
