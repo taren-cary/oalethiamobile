@@ -20,7 +20,7 @@ Editable checklist before submitting OalethiaMobile for iOS review. Add items as
 
 ## Important (metadata & compliance)
 
-- [ ] **Fix onboarding typo** – "Reaching Your Goals Just Got Alot Easier" → "A Lot" (or rephrase).
+- [x] **Fix onboarding typo** – Updated first onboarding headline to "Reaching Your Goals Just Got A Lot Easier".
 - [ ] **IAP vs Stripe** – Decide strategy: add Apple IAP for subscriptions/credits and implement Restore, or document US storefront exception if applicable. Resolve 3.1.1 risk.
 - [ ] **Permission strings** – Confirm all used capabilities (e.g. notifications if you add them) have purpose strings in app config.
 - [ ] **Test on clean install** – Run full flow with demo account on clean install; ensure backend/API and Supabase are production and stable.

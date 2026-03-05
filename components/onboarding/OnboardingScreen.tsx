@@ -95,7 +95,7 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
               >
                 <View style={styles.headlineWrap}>
                   <Text style={styles.headline} numberOfLines={2}>
-                    Reaching Your Goals Just Got Alot Easier
+                    Reaching Your Goals Just Got A Lot Easier
                   </Text>
                 </View>
                 <Text style={styles.bodyText}>
