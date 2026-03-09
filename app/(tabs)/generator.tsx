@@ -4,6 +4,7 @@
  * Replace with real submit/API + real results when implementing.
  */
 import { Image } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
@@ -54,7 +55,7 @@ const MOCK_TODAY = new Date().toLocaleDateString('en-US', {
 
 export default function GeneratorScreen() {
   const router = useRouter();
-  const { user, session } = useAuth();
+  const { user, session, isFirstTimeUser } = useAuth();
   const { setResult } = useGenerationResult();
   const insets = useSafeAreaInsets();
   const [outcome, setOutcome] = useState('');
@@ -70,10 +71,52 @@ export default function GeneratorScreen() {
   const [birthTime, setBirthTime] = useState('12:00');
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
+  const [showHints, setShowHints] = useState(false);
 
   const lottieRef = useRef<LottieView | null>(null);
 
   const paddingBottom = insets.bottom + 100;
+
+  const shouldGateBirthData = !!user && isFirstTimeUser;
+
+  // Load first-time generator hints preference per user.
+  useEffect(() => {
+    if (!user) {
+      setShowHints(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const key = `@oalethia/generator_hints_dismissed_${user.id}`;
+        const stored = await AsyncStorage.getItem(key);
+        if (!cancelled) {
+          setShowHints(stored !== 'true');
+        }
+      } catch {
+        if (!cancelled) {
+          setShowHints(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const dismissHintsForUser = useCallback(async () => {
+    if (!user) {
+      setShowHints(false);
+      return;
+    }
+    try {
+      const key = `@oalethia/generator_hints_dismissed_${user.id}`;
+      await AsyncStorage.setItem(key, 'true');
+    } catch {
+      // ignore
+    }
+    setShowHints(false);
+  }, [user]);
 
   // Load birth chart for signed-in user (same logic as CreateTimelineModalContent),
   // so we can call /api/generate-timeline without exposing birth fields on this screen.
@@ -165,6 +208,9 @@ export default function GeneratorScreen() {
       });
       // Overwrites any previous unsaved result; if user hadn't saved, it's lost, matching the desired behavior.
       router.push({ pathname: '/modal', params: { type: 'results' } });
+      if (showHints) {
+        dismissHintsForUser();
+      }
     } catch {
       setFormError('Network error. Please try again.');
     } finally {
@@ -185,7 +231,50 @@ export default function GeneratorScreen() {
     longitude,
     setResult,
     router,
+    showHints,
+    dismissHintsForUser,
   ]);
+
+  if (shouldGateBirthData) {
+    return (
+      <View style={styles.container}>
+        <Image
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
+          style={styles.backgroundImage}
+          contentFit="cover"
+          transition={300}
+        />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + glassSpacing.md, paddingBottom },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>StarManifest™ Generator</Text>
+          <GlassCard style={styles.formCard}>
+            <Text style={styles.promptLabel}>
+              Add your birth details to generate your first timeline.
+            </Text>
+            <Text style={styles.helperText}>
+              We use your birth date, time, and location to map your transits and
+              personalize your action plan. You only need to add this once.
+            </Text>
+            <GlassButton
+              title="Add birth data"
+              onPress={() =>
+                router.push({ pathname: '/modal', params: { type: 'welcome' } })
+              }
+              accessibilityLabel="Add birth data"
+              accessibilityHint="Opens a screen to enter your birth details"
+              style={styles.resultBtnPrimary}
+            />
+          </GlassCard>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -202,6 +291,47 @@ export default function GeneratorScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.title}>StarManifest™ Generator</Text>
+
+        {showHints && (
+          <GlassCard style={styles.formCard}>
+            <Text style={styles.promptLabel}>Quick walkthrough</Text>
+            <Text style={styles.helperText}>
+              1. Goal – Use the outcome field to describe what you want to
+              achieve as clearly as possible.
+            </Text>
+            <Text style={styles.helperText}>
+              2. Context – Share your current situation so timelines can match
+              your reality.
+            </Text>
+            <Text style={styles.helperText}>
+              3. Resources – List your time, budget, skills, or network so the
+              plan fits what you can actually use.
+            </Text>
+            <Text style={styles.helperText}>
+              4. Approach – Choose Conservative, Balanced, or Aggressive to set
+              how bold the actions should feel.
+            </Text>
+            <Text style={styles.helperText}>
+              5. Timeframe – Pick how long you want to work toward this goal
+              (1, 3, 6 months, or 1 year).
+            </Text>
+            <Text style={styles.helperText}>
+              6. Generate – Press and hold Generate to create your first cosmic
+              action timeline.
+            </Text>
+            <Pressable
+              onPress={dismissHintsForUser}
+              style={({ pressed }) => [
+                styles.hintsDismiss,
+                pressed && { opacity: 0.8 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss walkthrough"
+            >
+              <Text style={styles.hintsDismissText}>Got it</Text>
+            </Pressable>
+          </GlassCard>
+        )}
 
         {/* ---------- Form (web parity) ---------- */}
         <GlassCard style={styles.formCard}>
@@ -479,5 +609,15 @@ const styles = StyleSheet.create({
   },
   resultBtnPrimary: {
     marginTop: glassSpacing.lg,
+  },
+  hintsDismiss: {
+    alignSelf: 'flex-start',
+    marginTop: glassSpacing.sm,
+    paddingVertical: glassSpacing.xs,
+    paddingHorizontal: glassSpacing.sm,
+  },
+  hintsDismissText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.accent,
   },
 });

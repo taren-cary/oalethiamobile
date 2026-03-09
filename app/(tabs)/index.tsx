@@ -67,7 +67,7 @@ const DEFAULT_AFFIRMATION =
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user, session } = useAuth();
+  const { user, session, isFirstTimeUser } = useAuth();
   const { setShare } = useShare();
   const { setLevelUp } = useLevelUp();
   const { invalidate, invalidateAt } = usePointsRefresh();
@@ -553,6 +553,53 @@ export default function HomeScreen() {
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
+
+  const shouldGateBirthData = !!user && !useDevHomeData && isFirstTimeUser;
+
+  if (shouldGateBirthData) {
+    const paddingTop = insets.top + glassSpacing.md;
+    const paddingBottom = insets.bottom + 100;
+    return (
+      <View style={styles.container}>
+        <Image
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
+          style={styles.backgroundImage}
+          contentFit="cover"
+          transition={300}
+        />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop, paddingBottom },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.brandTitle}>Home</Text>
+          <GlassCard>
+            <Text style={styles.noAffirmationTitle}>
+              Add your birth details to unlock timelines
+            </Text>
+            <Text style={styles.noAffirmationBody}>
+              We use your birth date, time, and place to map your transits and
+              build your personalized action timelines. Add them once to get
+              started.
+            </Text>
+            <View style={styles.noAffirmationActions}>
+              <GlassButton
+                title="Add birth data"
+                onPress={() =>
+                  router.push({ pathname: '/modal', params: { type: 'welcome' } })
+                }
+                accessibilityLabel="Add birth data"
+                accessibilityHint="Opens a screen to enter your birth details"
+              />
+            </View>
+          </GlassCard>
+        </ScrollView>
+      </View>
+    );
+  }
 
   if (!user && !useDevHomeData) {
     return (

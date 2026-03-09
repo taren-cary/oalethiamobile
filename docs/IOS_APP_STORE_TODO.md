@@ -32,8 +32,8 @@ Editable checklist before submitting OalethiaMobile for iOS review. Add items as
 - [ ] **Notifications** – Implement notification settings or remove the row for v1.
 - [ ] **Subscription modal** – Add subscription/auto-renewal terms and links to Privacy/Terms (or one combined link) before "Continue to checkout."
 - [ ] **Accessibility** – Review Profile and modals so every interactive element has `accessibilityLabel` (and hint where helpful).
-- [ ] **Welcome modal** – Make a welcome modal for first time users who sign up and reward them with the Level 1 badge and then walk them through creating their first timeline.
-- [ ] **Onboarding & birth data flow** – Refactor onboarding and birth data collection so every real account is timeline-ready and users don’t get stuck without required data:
+- [x] **Welcome modal** – Make a welcome modal for first time users who sign up and reward them with the Level 1 badge just for signing up and then walk them through creating their first timeline.
+- [x] **Onboarding & birth data flow** – Refactor onboarding and birth data collection so every real account is timeline-ready and users don’t get stuck without required data:
   - **Onboarding slides (marketing intro):**
     - Show only once per device, regardless of signup status (persist a flag like `@oalethia/onboarding_complete = 'true'` in AsyncStorage).
     - After the user taps Skip or Get started on the last slide, set the flag and never show slides again on that device.
