@@ -8,7 +8,7 @@ Editable checklist before submitting OalethiaMobile for iOS review. Add items as
 
 - [x] **Account deletion** – Implement in-app account deletion (Profile → Delete account). Must initiate deletion in-app; cannot require emailing support only.
 - [x] **Privacy Policy in app** – Profile → Privacy Policy now opens `https://oalethia.com/privacy` using `Linking.openURL`, with basic error handling if the browser cannot be opened.
-- [ ] **Terms of Service in app** – Profile → Terms of Service should open real terms URL or in-app viewer. Remove stub.
+- [x] **Terms of Service in app** – Profile → Terms of Service now opens `https://oalethia.com/terms` using `Linking.openURL`, with basic error handling if the browser cannot be opened.
 - [x] **Contact support** – Profile → Contact support now opens the default mail app with `mailto:support@oalethia.com?subject=Oalethia%20Support`, and falls back to showing the email address if the mail app cannot be opened.
 - [ ] **Restore Purchases / subscription sync** – Either implement real Restore (e.g. StoreKit if using IAP) or a "Sync subscription status" that calls your backend; remove "not implemented" stub.
 - [ ] **Remove all "Dev view" stubs** – Notifications, Privacy, Terms, Contact support, Delete account, Restore Purchases must either work or be removed for v1. No "not implemented yet" in submitted build.

@@ -384,6 +384,16 @@ export default function ProfileScreen() {
         handleDeleteAccount();
         return;
       }
+      if (label === 'Terms of Service') {
+        Haptics.selectionAsync();
+        Linking.openURL('https://oalethia.com/terms').catch(() => {
+          Alert.alert(
+            'Unable to open',
+            'We could not open the Terms of Service. Please try again in a moment.'
+          );
+        });
+        return;
+      }
       if (label === 'Privacy Policy') {
         Haptics.selectionAsync();
         Linking.openURL('https://oalethia.com/privacy').catch(() => {
