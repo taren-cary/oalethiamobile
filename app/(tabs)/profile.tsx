@@ -1,6 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -381,6 +382,27 @@ export default function ProfileScreen() {
     (label: string) => {
       if (label === 'Delete account') {
         handleDeleteAccount();
+        return;
+      }
+      if (label === 'Privacy Policy') {
+        Haptics.selectionAsync();
+        Linking.openURL('https://oalethia.com/privacy').catch(() => {
+          Alert.alert(
+            'Unable to open',
+            'We could not open the Privacy Policy. Please try again in a moment.'
+          );
+        });
+        return;
+      }
+      if (label === 'Contact support') {
+        Haptics.selectionAsync();
+        const mailto = 'mailto:support@oalethia.com?subject=Oalethia%20Support';
+        Linking.openURL(mailto).catch(() => {
+          Alert.alert(
+            'Unable to open mail app',
+            'Please email support@oalethia.com from your email app.'
+          );
+        });
         return;
       }
       Alert.alert('Dev view', `${label} – not implemented yet.`);
