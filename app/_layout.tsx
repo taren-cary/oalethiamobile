@@ -34,6 +34,7 @@ import { BirthLocationPickerScreen } from '@/components/birth-location-picker/Bi
 import { AuthScreen } from '@/components/auth';
 import { AnimatedSplashScreen } from '@/components/splash';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { OnboardingProvider } from '@/contexts/OnboardingContext';
 import { GenerationResultProvider } from '@/contexts/GenerationResultContext';
 import { LevelUpProvider } from '@/contexts/LevelUpContext';
@@ -93,7 +94,9 @@ export default function RootLayout() {
           {!showAnimatedSplash && (
             <OnboardingProvider>
               <AuthProvider>
-                <AppShell colorScheme={colorScheme} />
+                <SubscriptionProvider>
+                  <AppShell colorScheme={colorScheme} />
+                </SubscriptionProvider>
               </AuthProvider>
             </OnboardingProvider>
           )}

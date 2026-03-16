@@ -6,8 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton, GlassCard } from '@/components/glass';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiPost } from '@/lib/api';
 import { glassBorderRadius, glassColors, glassSpacing, glassTypography } from '@/theme';
+import { IapService, type PurchaseResult } from '@/iap/IapService';
 
 type SubscriptionType = 'subscription' | 'credits';
 
@@ -27,40 +27,26 @@ export function SubscriptionModalContent({ type }: { type: SubscriptionType }) {
     setError('');
 
     try {
-      const endpoint =
-        type === 'subscription'
-          ? '/api/create-checkout-session'
-          : '/api/create-credits-checkout';
-      const body =
-        type === 'subscription'
-          ? { priceId: 'price_1SX5ZNACtGGEAl9EbA1wVA0A' }
-          : { priceId: 'price_1SX5YsACtGGEAl9EitsVNsN3', credits: 3 };
+      let result: PurchaseResult;
+      if (type === 'subscription') {
+        result = await IapService.buySubscriptionMonthly();
+      } else {
+        result = await IapService.buyCredits3Pack();
+      }
 
-      const res = await apiPost(endpoint, session, body);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        const msg = data.error || 'Failed to create checkout session';
-        if (msg.toLowerCase().includes('unauthorized') || res.status === 401) {
-          setError('Your session expired. Please sign in again.');
-        } else if (res.status === 500) {
-          setError('Server error. Please try again later.');
+      if (!result.ok) {
+        if (result.cancelled) {
+          // user cancelled; no need to show an error
+        } else if (result.errorMessage) {
+          setError(result.errorMessage);
         } else {
-          setError(msg);
+          setError('Purchase failed. Please try again.');
         }
-        setLoading(false);
         return;
       }
 
-      const data = await res.json();
-      const url = data.url;
-      if (url) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        const { openBrowserAsync } = await import('expo-web-browser');
-        await openBrowserAsync(url);
-        router.back();
-      } else {
-        setError('No checkout URL returned.');
-      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.back();
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Network error. Please try again.';
       setError(message);

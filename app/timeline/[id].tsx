@@ -17,6 +17,7 @@ import { TimelineActionCard } from '@/components/timeline-action-card';
 import type { TimelineActionLink } from '@/components/timeline-action-card';
 import { NextActionCard } from '@/components/next-action-card/NextActionCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
@@ -46,6 +47,7 @@ export default function TimelineDetailScreen() {
   const { setShare } = useShare();
   const { setLevelUp } = useLevelUp();
   const { invalidate } = usePointsRefresh();
+  const { tier, isFree } = useSubscription();
 
   const useDevTimeline = HOME_DEV_MODE && !user;
 
@@ -380,24 +382,40 @@ export default function TimelineDetailScreen() {
         />
       )}
 
-      {timeline.actions.map((action, index) => {
-        if (skippedActions.includes(index)) return null;
-        return (
-          <TimelineActionCard
-            key={index}
-            date={action.date}
-            action={action.action}
-            transit={action.transit}
-            strategy={mapActionStrategy(action)}
-            links={mapActionToLinks(action).length > 0 ? mapActionToLinks(action) : undefined}
-            completed={completedActions.includes(index)}
-            onToggleComplete={() => toggleComplete(index)}
-            onSkip={skipAction ? () => skipAction(index) : undefined}
-            staggerIndex={index}
-            reduceMotion={false}
-          />
-        );
-      })}
+      {!isFree &&
+        timeline.actions.map((action, index) => {
+          if (skippedActions.includes(index)) return null;
+          return (
+            <TimelineActionCard
+              key={index}
+              date={action.date}
+              action={action.action}
+              transit={action.transit}
+              strategy={mapActionStrategy(action)}
+              links={mapActionToLinks(action).length > 0 ? mapActionToLinks(action) : undefined}
+              completed={completedActions.includes(index)}
+              onToggleComplete={() => toggleComplete(index)}
+              onSkip={skipAction ? () => skipAction(index) : undefined}
+              staggerIndex={index}
+              reduceMotion={false}
+            />
+          );
+        })}
+      {isFree && timeline.actions.length > 0 && (
+        <GlassCard>
+          <Text style={styles.lockedTitle}>Full action timeline</Text>
+          <Text style={styles.lockedBody}>
+            Free users see the next action only. Upgrade to Premium to unlock all timeline actions
+            and detailed strategies.
+          </Text>
+          <Text
+            style={styles.lockedCta}
+            onPress={() => router.push({ pathname: '/modal', params: { type: 'subscription' } })}
+          >
+            Upgrade to Premium
+          </Text>
+        </GlassCard>
+      )}
 
       {affirmationText ? (
         <View style={styles.affirmationSection}>
@@ -460,5 +478,19 @@ const styles = StyleSheet.create({
   },
   affirmationSection: {
     gap: glassSpacing.md,
+  },
+  lockedTitle: {
+    ...glassTypography.h5,
+    color: glassColors.text.primary,
+    marginBottom: glassSpacing.xs,
+  },
+  lockedBody: {
+    ...glassTypography.body,
+    color: glassColors.text.secondary,
+    marginBottom: glassSpacing.sm,
+  },
+  lockedCta: {
+    ...glassTypography.label,
+    color: glassColors.accent,
   },
 });

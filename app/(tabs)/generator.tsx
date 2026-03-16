@@ -24,6 +24,7 @@ import { GlassButton, GlassCard, GlassTextInput } from '@/components/glass';
 import { TimelineActionCard } from '@/components/timeline-action-card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGenerationResult } from '@/contexts/GenerationResultContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { apiPost } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 import { glassBorderRadius, glassColors, glassSpacing, glassTypography } from '@/theme';
@@ -57,6 +58,7 @@ export default function GeneratorScreen() {
   const router = useRouter();
   const { user, session, isFirstTimeUser } = useAuth();
   const { setResult } = useGenerationResult();
+  const { tier, credits, isFree } = useSubscription();
   const insets = useSafeAreaInsets();
   const [outcome, setOutcome] = useState('');
   const [context, setContext] = useState('');
@@ -76,6 +78,7 @@ export default function GeneratorScreen() {
   const lottieRef = useRef<LottieView | null>(null);
 
   const paddingBottom = insets.bottom + 100;
+  const costPerGeneration = 1;
 
   const shouldGateBirthData = !!user && isFirstTimeUser;
 
@@ -289,8 +292,28 @@ export default function GeneratorScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + glassSpacing.md, paddingBottom }]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.title}>StarManifest™ Generator</Text>
+        >
+          <Text style={styles.title}>StarManifest™ Generator</Text>
+
+          {session && (
+            <GlassCard style={styles.creditsCard}>
+              <Text style={styles.creditsTitle}>Cosmic credits</Text>
+              <Text style={styles.creditsBody}>
+                {typeof credits === 'number'
+                  ? `${credits} credit${credits === 1 ? '' : 's'} remaining this month`
+                  : 'Loading credits…'}
+              </Text>
+              <Text style={styles.creditsHint}>
+                Each timeline generation uses {costPerGeneration} credit.
+              </Text>
+              {isFree && tier && (
+                <Text style={styles.creditsHint}>
+                  Free plan includes {tier.monthlyCredits} credits/month. Upgrade to Premium for
+                  more.
+                </Text>
+              )}
+            </GlassCard>
+          )}
 
         {showHints && (
           <GlassCard style={styles.formCard}>
@@ -388,24 +411,49 @@ export default function GeneratorScreen() {
 
           <Text style={styles.promptLabel}>Timeframe to achieve this goal</Text>
           <View style={[styles.chipRow, styles.chipRowTight]}>
-            {TIMEFRAMES.map((m) => (
-              <Pressable
-                key={m}
-                onPress={() => { Haptics.selectionAsync(); setTimeframe(m); }}
-                style={[styles.chip, timeframe === m && styles.chipActive]}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: timeframe === m }}
-                accessibilityLabel={m === 12 ? '1 Year' : `${m} Months`}
-              >
-                <Text style={[styles.chipText, timeframe === m && styles.chipTextActive]}>
-                  {m === 1 ? '1 Month' : m === 12 ? '1 Year' : `${m} Months`}
-                </Text>
-              </Pressable>
-            ))}
+            {TIMEFRAMES.map((m) => {
+              const maxTimeframe = (tier && tier.maxTimeframe) ?? 3;
+              const restricted = m > maxTimeframe;
+              const label = m === 1 ? '1 Month' : m === 12 ? '1 Year' : `${m} Months`;
+              return (
+                <Pressable
+                  key={m}
+                  onPress={() => {
+                    if (restricted) return;
+                    Haptics.selectionAsync();
+                    setTimeframe(m);
+                  }}
+                  style={[
+                    styles.chip,
+                    timeframe === m && styles.chipActive,
+                    restricted && styles.chipRestricted,
+                  ]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: timeframe === m, disabled: restricted }}
+                  accessibilityLabel={label}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      timeframe === m && styles.chipTextActive,
+                      restricted && styles.chipTextRestricted,
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
           <Text style={styles.helperText}>
             💡 Shorter timeframes create tighter, more focused action plans. Longer ones spread actions out.
           </Text>
+          {isFree && tier && tier.maxTimeframe < 12 && (
+            <Text style={styles.helperText}>
+              Free plan supports timelines up to {tier.maxTimeframe} months. Upgrade to Premium for
+              6–12 month timelines.
+            </Text>
+          )}
 
           <PressHoldGenerateButton
             onComplete={handleGenerate}
@@ -549,6 +597,12 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: glassColors.text.primary,
   },
+  chipRestricted: {
+    opacity: 0.5,
+  },
+  chipTextRestricted: {
+    color: glassColors.text.tertiary,
+  },
   chipDesc: {
     ...glassTypography.bodySmall,
     color: glassColors.text.tertiary,
@@ -609,6 +663,23 @@ const styles = StyleSheet.create({
   },
   resultBtnPrimary: {
     marginTop: glassSpacing.lg,
+  },
+  creditsCard: {
+    marginBottom: glassSpacing.lg,
+  },
+  creditsTitle: {
+    ...glassTypography.label,
+    color: glassColors.text.primary,
+    marginBottom: glassSpacing.xs,
+  },
+  creditsBody: {
+    ...glassTypography.body,
+    color: glassColors.text.secondary,
+  },
+  creditsHint: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: 4,
   },
   hintsDismiss: {
     alignSelf: 'flex-start',
