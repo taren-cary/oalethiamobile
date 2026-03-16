@@ -69,15 +69,13 @@ export function ResultsModalContent() {
     setAffirmed(true);
     try {
       const text = result.timelineAffirmations[0] ?? '';
-      const res = await apiPost(
-        '/api/affirm',
-        session,
-        {
-          generation_id: result.tempGenerationId,
-          affirmation_index: 0,
-          affirmation_text: text,
-        }
-      );
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await apiPost('/api/affirm', session, {
+        generation_id: result.tempGenerationId,
+        affirmation_index: 0,
+        affirmation_text: text,
+        tz: timeZone,
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.levelUp) {

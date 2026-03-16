@@ -116,7 +116,11 @@ export default function TimelineDetailScreen() {
     if (useDevTimeline) return;
     if (!id || !session) return;
     try {
-      const res = await apiGet(`/api/today-affirmation/${id}`, session);
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await apiGet(
+        `/api/today-affirmation/${id}?tz=${encodeURIComponent(timeZone)}`,
+        session
+      );
       if (!res.ok) return;
       const data = await res.json();
       setAffirmationIndex(data.affirmation_index ?? 0);
@@ -264,15 +268,14 @@ export default function TimelineDetailScreen() {
     });
 
     try {
-      const res = await apiPost(
-        '/api/affirm',
-        session,
-        {
-          generation_id: id,
-          affirmation_index: affirmationIndex,
-          affirmation_text: affirmationText || timeline?.timeline_affirmations?.[affirmationIndex],
-        }
-      );
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await apiPost('/api/affirm', session, {
+        generation_id: id,
+        affirmation_index: affirmationIndex,
+        affirmation_text:
+          affirmationText || timeline?.timeline_affirmations?.[affirmationIndex],
+        tz: timeZone,
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.levelUp) {

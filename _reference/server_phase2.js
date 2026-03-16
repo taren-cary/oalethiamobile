@@ -274,11 +274,43 @@ const requireAuth = async (req, res, next) => {
 // ==============================================
 
 /**
- * Calculate Julian Day from date and time
- */
+* Calculate Julian Day from date and time
+*/
 function dateToJulianDay(year, month, day, hour, minute) {
   const decimalTime = hour + minute / 60.0;
   return sweph.julday(year, month, day, decimalTime, 1);
+}
+
+/**
+ * Compute today's date string (YYYY-MM-DD) in a given timezone.
+ * Falls back to UTC calendar date if the timezone is invalid.
+ */
+function getTodayForRequest(req) {
+  const tz =
+    (req.query && req.query.tz) ||
+    (req.body && req.body.tz) ||
+    'UTC';
+
+  try {
+    const now = new Date();
+    const dtf = new Intl.DateTimeFormat('en-CA', {
+      timeZone: String(tz),
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const parts = dtf.formatToParts(now);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    if (!year || !month || !day) {
+      throw new Error('Invalid date parts');
+    }
+    return { today: `${year}-${month}-${day}`, timeZone: String(tz) };
+  } catch (e) {
+    const todayUtc = new Date().toISOString().split('T')[0];
+    return { today: todayUtc, timeZone: 'UTC' };
+  }
 }
 
 /**
@@ -1285,7 +1317,7 @@ app.post('/api/affirm', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Generation ID and affirmation index are required' });
     }
 
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const { today } = getTodayForRequest(req); // YYYY-MM-DD in user timezone (or UTC fallback)
 
     // Handle temporary generation IDs (unsaved timelines)
     if (generation_id.startsWith('temp_')) {
@@ -1518,7 +1550,7 @@ function buildAffirmationImageUrl(lifeContext, imageIndex) {
 app.get('/api/today-affirmation/:generationId', requireAuth, async (req, res) => {
   try {
     const { generationId } = req.params;
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const { today } = getTodayForRequest(req); // YYYY-MM-DD in user timezone (or UTC fallback)
 
     // Get timeline with affirmations, created_at, and life_context
     const { data: timeline, error: timelineError } = await supabase
@@ -1605,7 +1637,7 @@ app.get('/api/today-affirmation/:generationId', requireAuth, async (req, res) =>
 app.get('/api/check-affirmation/:generationId', requireAuth, async (req, res) => {
   try {
     const { generationId } = req.params;
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const { today } = getTodayForRequest(req); // YYYY-MM-DD in user timezone (or UTC fallback)
     
     const { data: existingAffirmation, error } = await supabase
       .from('daily_affirmations')

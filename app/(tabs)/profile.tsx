@@ -33,6 +33,14 @@ import {
 } from '@/lib/mockHomeData';
 import { supabase, supabaseUrl } from '@/lib/supabase';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
+import {
+  cancelActionReminders,
+  cancelDailyAffirmationReminder,
+  getNotificationPreferences,
+  saveNotificationPreferences,
+  scheduleDailyAffirmationReminder,
+  type NotificationPreferences,
+} from '@/lib/notifications';
 
 const LEVEL_BADGE_SOURCES: Record<number, any> = {
   1: require('@/assets/badges/level1.svg'),
@@ -88,6 +96,9 @@ export default function ProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [accountDeleting, setAccountDeleting] = useState(false);
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences | null>(
+    null
+  );
 
   const fetchProfile = useCallback(async () => {
     if (useDevProfileData) {
@@ -234,6 +245,19 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchAvatarUrl();
   }, [fetchAvatarUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const prefs = await getNotificationPreferences();
+      if (!cancelled) {
+        setNotificationPrefs(prefs);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const pickAndUploadAvatar = useCallback(async () => {
     if (!user || avatarUploading) return;
@@ -384,6 +408,10 @@ export default function ProfileScreen() {
         handleDeleteAccount();
         return;
       }
+      if (label === 'Notifications') {
+        // Handled inline below; no dev stub.
+        return;
+      }
       if (label === 'Terms of Service') {
         Haptics.selectionAsync();
         Linking.openURL('https://oalethia.com/terms').catch(() => {
@@ -415,7 +443,7 @@ export default function ProfileScreen() {
         });
         return;
       }
-      Alert.alert('Dev view', `${label} – not implemented yet.`);
+      Alert.alert('Coming soon', `${label} – not implemented yet.`);
     },
     [handleDeleteAccount]
   );
@@ -630,8 +658,104 @@ export default function ProfileScreen() {
           >
             <Ionicons name="notifications-outline" size={20} color={glassColors.text.primary} />
             <Text style={styles.settingsRowLabel}>Notifications</Text>
-            <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+            <Text style={styles.settingsRowValue}>
+              {notificationPrefs?.dailyEnabled || notificationPrefs?.actionsEnabled
+                ? 'On'
+                : 'Off'}
+            </Text>
           </Pressable>
+          {notificationPrefs && (
+            <>
+              <View style={styles.settingsRowDivider} />
+              <View style={styles.settingsSubSection}>
+                <Text style={styles.settingsSubTitle}>Daily affirmation</Text>
+                <View style={styles.settingsSubRow}>
+                  <Text style={styles.settingsSubLabel}>Reminder</Text>
+                  <Pressable
+                    onPress={async () => {
+                      const next = {
+                        ...notificationPrefs,
+                        dailyEnabled: !notificationPrefs.dailyEnabled,
+                      };
+                      setNotificationPrefs(next);
+                      await saveNotificationPreferences(next);
+                      if (next.dailyEnabled) {
+                        await scheduleDailyAffirmationReminder(next.dailyTime);
+                      } else {
+                        await cancelDailyAffirmationReminder();
+                      }
+                    }}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: notificationPrefs.dailyEnabled }}
+                    style={({ pressed }) => [
+                      styles.toggle,
+                      notificationPrefs.dailyEnabled && styles.toggleOn,
+                      pressed && styles.settingsRowPressed,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleThumb,
+                        notificationPrefs.dailyEnabled && styles.toggleThumbOn,
+                      ]}
+                    />
+                  </Pressable>
+                </View>
+                <Text style={styles.settingsHint}>
+                  Sends a gentle nudge once per day to check your affirmation.
+                </Text>
+
+                <View style={styles.settingsSubRow}>
+                  <Text style={styles.settingsSubLabel}>Time</Text>
+                  <Text style={styles.settingsRowValue}>
+                    {`${String(notificationPrefs.dailyTime.hour).padStart(2, '0')}:${String(
+                      notificationPrefs.dailyTime.minute
+                    ).padStart(2, '0')}`}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.settingsRowDivider} />
+
+              <View style={styles.settingsSubSection}>
+                <Text style={styles.settingsSubTitle}>Next actions</Text>
+                <View style={styles.settingsSubRow}>
+                  <Text style={styles.settingsSubLabel}>Reminders</Text>
+                  <Pressable
+                    onPress={async () => {
+                      const next = {
+                        ...notificationPrefs,
+                        actionsEnabled: !notificationPrefs.actionsEnabled,
+                      };
+                      setNotificationPrefs(next);
+                      await saveNotificationPreferences(next);
+                      if (!next.actionsEnabled) {
+                        await cancelActionReminders();
+                      }
+                      // When enabling, Home will schedule based on your timelines.
+                    }}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: notificationPrefs.actionsEnabled }}
+                    style={({ pressed }) => [
+                      styles.toggle,
+                      notificationPrefs.actionsEnabled && styles.toggleOn,
+                      pressed && styles.settingsRowPressed,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleThumb,
+                        notificationPrefs.actionsEnabled && styles.toggleThumbOn,
+                      ]}
+                    />
+                  </Pressable>
+                </View>
+                <Text style={styles.settingsHint}>
+                  Day-of and 3-days-before reminders for your upcoming actions.
+                </Text>
+              </View>
+            </>
+          )}
           <View style={styles.settingsRowDivider} />
           <Pressable
             style={({ pressed }) => [styles.settingsRow, pressed && styles.settingsRowPressed]}
@@ -941,6 +1065,54 @@ const styles = StyleSheet.create({
   settingsRowDivider: {
     height: 1,
     backgroundColor: glassColors.glassBorder.subtle,
+  },
+  settingsRowValue: {
+    ...glassTypography.labelSmall,
+    color: glassColors.text.tertiary,
+  },
+  settingsSubSection: {
+    paddingVertical: glassSpacing.sm,
+    gap: glassSpacing.xs,
+  },
+  settingsSubTitle: {
+    ...glassTypography.label,
+    color: glassColors.text.primary,
+  },
+  settingsSubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: glassSpacing.xs,
+  },
+  settingsSubLabel: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.secondary,
+  },
+  settingsHint: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: glassSpacing.xs,
+  },
+  toggle: {
+    width: 44,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: glassColors.glass.medium,
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  toggleOn: {
+    backgroundColor: glassColors.primary,
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: glassColors.background.primary,
+    alignSelf: 'flex-start',
+  },
+  toggleThumbOn: {
+    alignSelf: 'flex-end',
   },
   button: {
     alignSelf: 'stretch',

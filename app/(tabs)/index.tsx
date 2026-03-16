@@ -35,6 +35,13 @@ import { getProgress, saveProgress } from '@/lib/progress-storage';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline } from '@/types/timeline';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
+import {
+  cancelActionReminders,
+  cancelDailyAffirmationReminder,
+  getNotificationPreferences,
+  scheduleDailyAffirmationReminder,
+} from '@/lib/notifications';
+import { scheduleNextActionReminders } from '../../lib/scheduleNextActions';
 
 const LEVEL_BADGE_SOURCES: Record<number, any> = {
   1: require('@/assets/badges/level1.svg'),
@@ -115,6 +122,7 @@ export default function HomeScreen() {
   const [progressByTimelineId, setProgressByTimelineId] = useState<
     Record<string, { completed: number[]; skipped: number[] }>
   >({});
+  const [notificationPrefsLoaded, setNotificationPrefsLoaded] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (!session) {
@@ -219,9 +227,13 @@ export default function HomeScreen() {
       );
       setProgressByTimelineId(progressMap);
 
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       const results = await Promise.all(
         timelines.map((t) =>
-          apiGet(`/api/today-affirmation/${t.id}`, session).then(async (res) => {
+          apiGet(
+            `/api/today-affirmation/${t.id}?tz=${encodeURIComponent(timeZone)}`,
+            session
+          ).then(async (res) => {
             if (res.ok) {
               const data = await res.json();
               return {
@@ -265,6 +277,23 @@ export default function HomeScreen() {
     fetchRecentTimelinesAndAffirmations();
   }, [fetchProfile, fetchLevel, fetchRecentTimelinesAndAffirmations, useDevHomeData]);
 
+  // Load notification preferences once so we can coordinate scheduling on this screen.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await getNotificationPreferences();
+      } finally {
+        if (!cancelled) {
+          setNotificationPrefsLoaded(true);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     if (useDevHomeData || invalidateAt <= 0) {
       return;
@@ -286,15 +315,13 @@ export default function HomeScreen() {
       if (!session) return;
       setAffirmLoadingId(timelineId);
       try {
-        const res = await apiPost(
-          '/api/affirm',
-          session,
-          {
-            generation_id: timelineId,
-            affirmation_index: affirmationIndexVal,
-            affirmation_text: affirmationTextVal,
-          }
-        );
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const res = await apiPost('/api/affirm', session, {
+          generation_id: timelineId,
+          affirmation_index: affirmationIndexVal,
+          affirmation_text: affirmationTextVal,
+          tz: timeZone,
+        });
         if (res.ok) {
           setTodayAffirmations((prev) =>
             prev
@@ -350,15 +377,13 @@ export default function HomeScreen() {
     setAffirmLoading(true);
     setAffirmed(true);
     try {
-      const res = await apiPost(
-        '/api/affirm',
-        session,
-        {
-          generation_id: generationId,
-          affirmation_index: affirmationIndex,
-          affirmation_text: affirmationText,
-        }
-      );
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await apiPost('/api/affirm', session, {
+        generation_id: generationId,
+        affirmation_index: affirmationIndex,
+        affirmation_text: affirmationText,
+        tz: timeZone,
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.levelUp) {
@@ -471,6 +496,28 @@ export default function HomeScreen() {
     items.sort((a, b) => (a.nextAction.date < b.nextAction.date ? -1 : a.nextAction.date > b.nextAction.date ? 1 : 0));
     return items;
   }, [useDevHomeData, recentTimelines, progressByTimelineId]);
+
+  // Keep next-action reminders roughly in sync with the current "next actions".
+  useEffect(() => {
+    if (!notificationPrefsLoaded || useDevHomeData || !user) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const prefs = await getNotificationPreferences();
+      if (!prefs.actionsEnabled) {
+        return;
+      }
+      await cancelActionReminders();
+      if (!realNextActionItems.length || cancelled) {
+        return;
+      }
+      await scheduleNextActionReminders(realNextActionItems, prefs.actionsTime);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [notificationPrefsLoaded, useDevHomeData, user, realNextActionItems]);
 
   const handleRealNextActionToggleComplete = useCallback(
     async (timelineId: string, actionIndex: number) => {

@@ -29,7 +29,7 @@ Editable checklist before submitting OalethiaMobile for iOS review. Add items as
 
 ## Optional / polish
 
-- [ ] **Notifications** – Implement notification settings or remove the row for v1.
+- [x] **Notifications** – Implement notification settings and reminders (daily affirmation + next actions) so v1 has a working system.
 - [ ] **Subscription modal** – Add subscription/auto-renewal terms and links to Privacy/Terms (or one combined link) before "Continue to checkout."
 - [ ] **Accessibility** – Review Profile and modals so every interactive element has `accessibilityLabel` (and hint where helpful).
 - [x] **Welcome modal** – Make a welcome modal for first time users who sign up and reward them with the Level 1 badge just for signing up and then walk them through creating their first timeline.
