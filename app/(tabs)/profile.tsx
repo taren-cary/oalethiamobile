@@ -20,8 +20,10 @@ import { GlassButton, GlassCard } from '@/components/glass';
 import { Ionicons } from '@expo/vector-icons';
 import type { LevelData } from '@/components/points-level-badge';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet } from '@/lib/api';
+import { IapService } from '@/iap/IapService';
 import {
   generateFakeLeaderboard,
   LEVEL_NAMES,
@@ -72,6 +74,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, session, signOut } = useAuth();
   const { invalidateAt } = usePointsRefresh();
+  const subscriptionCtx = useSubscription();
 
   // Phase 1: dev/mock view for design & UX
   const useDevProfileData = HOME_DEV_MODE && !user;
@@ -99,6 +102,7 @@ export default function ProfileScreen() {
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences | null>(
     null
   );
+  const [iapRestoring, setIapRestoring] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     if (useDevProfileData) {
@@ -224,6 +228,21 @@ export default function ProfileScreen() {
     fetchSubscription();
     fetchLeaderboardPreview();
   }, [fetchProfile, fetchLevel, fetchSubscription, fetchLeaderboardPreview]);
+
+  useEffect(() => {
+    if (useDevProfileData || subscriptionCtx.loading) return;
+    setSubscriptionLoading(false);
+    setSubscriptionStatus({
+      isFree: subscriptionCtx.isFree,
+      status: subscriptionCtx.status,
+      tier: { name: subscriptionCtx.tier?.name },
+    });
+  }, [
+    subscriptionCtx.isFree,
+    subscriptionCtx.loading,
+    subscriptionCtx.status,
+    subscriptionCtx.tier,
+  ]);
 
   const fetchAvatarUrl = useCallback(async () => {
     if (useDevProfileData || !user) {
@@ -412,6 +431,39 @@ export default function ProfileScreen() {
         // Handled inline below; no dev stub.
         return;
       }
+      if (label === 'Restore Purchases') {
+        if (useDevProfileData) {
+          Alert.alert('Restore purchases', 'Dev profile mode is enabled.');
+          return;
+        }
+        if (!user || !session) {
+          Alert.alert('Not signed in', 'Please sign in before restoring purchases.');
+          return;
+        }
+        if (iapRestoring) return;
+
+        void (async () => {
+          try {
+            setIapRestoring(true);
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            const result = await IapService.restorePurchases();
+            if (!result.ok) {
+              Alert.alert('Restore failed', result.errorMessage ?? 'Please try again.');
+              return;
+            }
+
+            Alert.alert('Purchases restored', 'Premium and credits are up to date.');
+          } catch (e) {
+            Alert.alert(
+              'Restore failed',
+              e instanceof Error ? e.message : 'Please try again in a moment.',
+            );
+          } finally {
+            setIapRestoring(false);
+          }
+        })();
+        return;
+      }
       if (label === 'Terms of Service') {
         Haptics.selectionAsync();
         Linking.openURL('https://oalethia.com/terms').catch(() => {
@@ -445,7 +497,7 @@ export default function ProfileScreen() {
       }
       Alert.alert('Coming soon', `${label} – not implemented yet.`);
     },
-    [handleDeleteAccount]
+    [handleDeleteAccount, iapRestoring, session, user]
   );
 
   return (

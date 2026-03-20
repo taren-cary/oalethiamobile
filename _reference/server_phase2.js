@@ -836,7 +836,7 @@ app.get('/api/credits', requireAuth, async (req, res) => {
   try {
     const { data: credits, error } = await supabase
       .from('user_credits')
-      .select('credits, last_reset_date')
+      .select('credits, last_reset_date, purchased_credits')
       .eq('user_id', req.user.id)
       .single();
 
@@ -844,13 +844,28 @@ app.get('/api/credits', requireAuth, async (req, res) => {
       throw error;
     }
 
+    // Determine current monthly allotment based on active subscription tier.
+    // If there's no active subscription, treat the user as free (3 credits/month).
+    const { data: activeSub, error: activeSubError } = await supabase
+      .from('user_subscriptions')
+      .select('subscription_tiers (monthly_credits, name)')
+      .eq('user_id', req.user.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (activeSubError && activeSubError.code !== 'PGRST116') {
+      throw activeSubError;
+    }
+
+    const monthlyCredits = activeSub?.subscription_tiers?.monthly_credits ?? 3;
+
     if (!credits) {
       // Create new user credits record
       const { data: newCredits, error: insertError } = await supabase
         .from('user_credits')
         .insert({
           user_id: req.user.id,
-          credits: 3,
+          credits: monthlyCredits,
           last_reset_date: new Date().toISOString().split('T')[0]
         })
         .select()
@@ -865,11 +880,13 @@ app.get('/api/credits', requireAuth, async (req, res) => {
     const now = new Date();
     
     if (lastReset.getMonth() !== now.getMonth() || lastReset.getFullYear() !== now.getFullYear()) {
+      const purchasedCredits = credits.purchased_credits ?? 0;
+      const resetCredits = purchasedCredits + monthlyCredits;
       // Reset credits
       const { data: updatedCredits, error: updateError } = await supabase
         .from('user_credits')
         .update({
-          credits: 3,
+          credits: resetCredits,
           last_reset_date: now.toISOString().split('T')[0]
         })
         .eq('user_id', req.user.id)
@@ -883,7 +900,7 @@ app.get('/api/credits', requireAuth, async (req, res) => {
         .from('credit_transactions')
         .insert({
           user_id: req.user.id,
-          amount: 3,
+          amount: monthlyCredits,
           type: 'bonus',
           source: 'monthly_reset'
         });

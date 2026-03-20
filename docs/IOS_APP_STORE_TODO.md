@@ -10,8 +10,8 @@ Editable checklist before submitting OalethiaMobile for iOS review. Add items as
 - [x] **Privacy Policy in app** – Profile → Privacy Policy now opens `https://oalethia.com/privacy` using `Linking.openURL`, with basic error handling if the browser cannot be opened.
 - [x] **Terms of Service in app** – Profile → Terms of Service now opens `https://oalethia.com/terms` using `Linking.openURL`, with basic error handling if the browser cannot be opened.
 - [x] **Contact support** – Profile → Contact support now opens the default mail app with `mailto:support@oalethia.com?subject=Oalethia%20Support`, and falls back to showing the email address if the mail app cannot be opened.
-- [ ] **Restore Purchases / subscription sync** – Either implement real Restore (e.g. StoreKit if using IAP) or a "Sync subscription status" that calls your backend; remove "not implemented" stub.
-- [ ] **Remove all "Dev view" stubs** – Notifications, Privacy, Terms, Contact support, Delete account, Restore Purchases must either work or be removed for v1. No "not implemented yet" in submitted build.
+- [x] **Restore Purchases / subscription sync** – Implemented Restore Purchases via StoreKit/IAP receipt verification and best-effort entitlement sync.
+- [x] **Remove all "Dev view" stubs** – Notifications, Privacy, Terms, Contact support, Delete account, Restore Purchases now work (with dev-only mode gating).
 - [ ] **Demo account for App Review** – In App Store Connect → App Review Information → Notes, provide demo account (email + password) with birth data and at least one timeline so reviewers can test full flow.
 - [ ] **Hide "Skip auth" in production** – In AuthScreen, show "Skip auth and continue (dev only)" only when `__DEV__` is true so production builds don’t expose dev-only entry.
 - [ ] **Credits logic** - Implement the credits logic for generating timelines, how much extra credits cost etc. 

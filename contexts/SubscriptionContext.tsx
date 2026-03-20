@@ -2,6 +2,8 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 
 import { useAuth } from '@/contexts/AuthContext';
 import { apiGet } from '@/lib/api';
+import { subscribeToIapUpdates } from '@/lib/iapEvents';
+import { IapService } from '@/iap/IapService';
 
 interface SubscriptionTier {
   name: string;
@@ -105,9 +107,32 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setCredits(null);
       return;
     }
+
+    // Keep IAP entitlements in sync with the server-side credit/subscription state.
+    // This is best-effort and should never block the UI.
+    void (async () => {
+      try {
+        await IapService.syncOwnedEntitlements();
+      } catch {
+        // ignore
+      }
+    })();
+
     refreshSubscription();
     refreshCredits();
   }, [session, refreshSubscription, refreshCredits]);
+
+  useEffect(() => {
+    const unsubscribe = subscribeToIapUpdates(() => {
+      // Refresh asynchronously; we don't want to block the caller.
+      void (async () => {
+        await refreshSubscription();
+        await refreshCredits();
+      })();
+    });
+
+    return unsubscribe;
+  }, [refreshSubscription, refreshCredits]);
 
   const value: SubscriptionContextValue = {
     tier: tier ?? DEFAULT_TIER,
