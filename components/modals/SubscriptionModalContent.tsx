@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GlassButton, GlassCard } from '@/components/glass';
@@ -60,6 +60,14 @@ export function SubscriptionModalContent({ type }: { type: SubscriptionType }) {
     router.back();
   }, [router]);
 
+  const openPrivacyPolicy = useCallback(() => {
+    Linking.openURL('https://oalethia.com/privacy').catch(() => {});
+  }, []);
+
+  const openTerms = useCallback(() => {
+    Linking.openURL('https://oalethia.com/terms').catch(() => {});
+  }, []);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.header}>
@@ -106,6 +114,37 @@ export function SubscriptionModalContent({ type }: { type: SubscriptionType }) {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
+
+        {type === 'subscription' && (
+          <View style={styles.legalBox}>
+            <Text style={styles.legalText}>
+              Subscription automatically renews monthly at $9.99 unless cancelled at least 24 hours
+              before the end of the current period. Renewal will be charged to your Apple ID account.
+              Manage or cancel at any time in{' '}
+              <Text style={styles.legalBold}>Settings → [Your Name] → Subscriptions</Text>.
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.legalLinks}>
+          <Pressable
+            onPress={openPrivacyPolicy}
+            accessibilityRole="link"
+            accessibilityLabel="Privacy Policy"
+            hitSlop={8}
+          >
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </Pressable>
+          <Text style={styles.legalSeparator}>·</Text>
+          <Pressable
+            onPress={openTerms}
+            accessibilityRole="link"
+            accessibilityLabel="Terms of Service"
+            hitSlop={8}
+          >
+            <Text style={styles.legalLink}>Terms of Service</Text>
+          </Pressable>
+        </View>
 
         <GlassButton
           title="Cancel"
@@ -191,5 +230,34 @@ const styles = StyleSheet.create({
   },
   button: {
     marginBottom: glassSpacing.md,
+  },
+  legalBox: {
+    marginBottom: glassSpacing.md,
+  },
+  legalText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  legalBold: {
+    color: glassColors.text.secondary,
+    fontWeight: '600' as const,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: glassSpacing.lg,
+    gap: 6,
+  },
+  legalLink: {
+    ...glassTypography.bodySmall,
+    color: glassColors.accent,
+    textDecorationLine: 'underline' as const,
+  },
+  legalSeparator: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
   },
 });

@@ -30,7 +30,7 @@ Editable checklist before submitting OalethiaMobile for iOS review. Add items as
 ## Optional / polish
 
 - [x] **Notifications** – Implement notification settings and reminders (daily affirmation + next actions) so v1 has a working system.
-- [ ] **Subscription modal** – Add subscription/auto-renewal terms and links to Privacy/Terms (or one combined link) before "Continue to checkout."
+- [x] **Subscription modal** – Added auto-renewal disclosure ("renews monthly at $9.99 unless cancelled 24h before renewal") and tappable Privacy Policy · Terms of Service links before "Continue to checkout." Both shown for credits type too. Subscription-only renewal text is conditionally shown for the subscription flow only.
 - [ ] **Accessibility** – Review Profile and modals so every interactive element has `accessibilityLabel` (and hint where helpful).
 - [x] **Welcome modal** – Make a welcome modal for first time users who sign up and reward them with the Level 1 badge just for signing up and then walk them through creating their first timeline.
 - [x] **Onboarding & birth data flow** – Refactor onboarding and birth data collection so every real account is timeline-ready and users don't get stuck without required data:
