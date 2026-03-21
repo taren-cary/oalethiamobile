@@ -2386,6 +2386,50 @@ app.get('/api/user-subscription', requireAuth, async (req, res) => {
   }
 });
 
+// Called by the client when StoreKit returns no subscription receipt for a user, meaning the
+// Apple subscription has fully lapsed. This ensures the DB is never left on premium tier
+// when Apple has no active entitlement to show. It is a no-op if the user is already free.
+app.post('/api/reconcile-subscription', requireAuth, async (req, res) => {
+  try {
+    const { data: freeTier, error: freeTierErr } = await supabase
+      .from('subscription_tiers')
+      .select('id')
+      .eq('name', 'free')
+      .single();
+
+    if (freeTierErr || !freeTier) {
+      return res.status(500).json({ error: 'Free tier not found' });
+    }
+
+    // Downgrade any row that is NOT already on the free tier.
+    const { data: updated, error: updateErr } = await supabase
+      .from('user_subscriptions')
+      .update({
+        tier_id: freeTier.id,
+        status: 'canceled',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', req.user.id)
+      .neq('tier_id', freeTier.id)
+      .select('tier_id')
+      .maybeSingle();
+
+    if (updateErr) throw updateErr;
+
+    if (updated) {
+      console.warn(
+        `[reconcile-subscription] Downgraded user ${req.user.id} to free tier` +
+        ` — no active Apple subscription receipt found on device.`
+      );
+    }
+
+    res.json({ ok: true, reconciled: !!updated });
+  } catch (error) {
+    console.error('reconcile-subscription error:', error);
+    res.status(500).json({ error: 'Failed to reconcile subscription' });
+  }
+});
+
 // Get subscription tiers
 app.get('/api/subscription-tiers', async (req, res) => {
   try {

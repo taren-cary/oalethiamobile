@@ -17,6 +17,7 @@ import { IAPResponseCode } from 'expo-in-app-purchases';
 import type { InAppPurchase } from 'expo-in-app-purchases';
 
 import { supabase } from '@/lib/supabase';
+import { API_BASE_URL, getAuthHeaders } from '@/lib/api';
 import { emitIapUpdated } from '../lib/iapEvents';
 
 type ReceiptType = 'subscription' | 'credits';
@@ -193,6 +194,26 @@ async function verifyReceiptOnServer(args: {
   if (error) throw new Error(error.message ?? 'Could not verify purchase.');
 }
 
+/**
+ * Called when StoreKit returns no subscription receipt at all, meaning the Apple
+ * subscription has fully lapsed (never purchased, or billing lapsed long enough
+ * that Apple no longer surfaces the receipt). Ensures the DB is not left on premium.
+ */
+async function reconcileNoActiveSubscription(): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const session = sessionData?.session;
+  if (!session) return;
+
+  try {
+    await fetch(`${API_BASE_URL}/api/reconcile-subscription`, {
+      method: 'POST',
+      headers: getAuthHeaders(session),
+    });
+  } catch {
+    // Best-effort; the next foreground sync will retry.
+  }
+}
+
 async function buyItem(productId: string): Promise<PurchaseResult> {
   await ensureInitialized();
 
@@ -286,10 +307,19 @@ export const IapService: IapPurchaseService = {
       (r): r is InAppPurchase => typeof (r as any).productId === 'string',
     );
 
+    // Track whether we found any subscription receipt. If StoreKit returns nothing
+    // for the subscription product, the entitlement has fully lapsed and we need
+    // to reconcile the DB back to free tier.
+    let foundSubscriptionReceipt = false;
+
     for (const purchase of purchases) {
       const meta = PRODUCT_META_BY_ID[purchase.productId];
       if (!meta) continue;
       if (!purchase.transactionReceipt) continue;
+
+      if (meta.receiptType === 'subscription') {
+        foundSubscriptionReceipt = true;
+      }
 
       try {
         await verifyReceiptOnServer({
@@ -305,6 +335,12 @@ export const IapService: IapPurchaseService = {
       } catch {
         // Avoid breaking app startup. User can re-trigger by going to Profile and restoring.
       }
+    }
+
+    // No subscription receipt in purchase history → Apple has no active entitlement.
+    // Reconcile so the DB never stays on premium when the subscription has truly lapsed.
+    if (!foundSubscriptionReceipt) {
+      await reconcileNoActiveSubscription();
     }
 
     emitIapUpdated();
