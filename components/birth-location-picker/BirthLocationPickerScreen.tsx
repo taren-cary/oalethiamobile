@@ -133,6 +133,7 @@ export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPicke
         source={require('@/assets/images/oalethiamobilebackground.jpeg')}
         style={styles.backgroundImage}
         contentFit="cover"
+        accessible={false}
       />
 
       <View style={styles.cardWrap}>
@@ -197,6 +198,8 @@ export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPicke
                         pressed && styles.suggestionItemPressed,
                       ]}
                       onPress={() => handleSelectSuggestion(item)}
+                      accessibilityRole="button"
+                      accessibilityLabel={item.display_name}
                     >
                       <Text style={styles.suggestionText} numberOfLines={2}>
                         {item.display_name}

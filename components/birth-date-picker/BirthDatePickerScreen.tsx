@@ -6,6 +6,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// View doesn't expose onAccessibilityIncrement/Decrement in the TS definitions for this RN
+// version, so we cast to ComponentType<any> for the adjustable picker wrappers.
+const AdjustableView = View as React.ComponentType<any>;
+
 import { GlassButton } from '@/components/glass/GlassButton';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import {
@@ -123,6 +127,7 @@ export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenP
         source={require('@/assets/images/oalethiamobilebackground.jpeg')}
         style={styles.backgroundImage}
         contentFit="cover"
+        accessible={false}
       />
 
       <View style={styles.cardWrap}>
@@ -151,7 +156,23 @@ export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenP
             </Text>
 
             <View style={styles.pickerRow}>
-              <View style={styles.pickerColumn}>
+              <AdjustableView
+                accessible={true}
+                accessibilityRole="adjustable"
+                accessibilityLabel="Month"
+                accessibilityValue={{ text: MONTHS[monthIndex] }}
+                onAccessibilityIncrement={() => {
+                  const next = Math.min(monthIndex + 1, MONTHS.length - 1);
+                  setMonthIndex(next);
+                  monthRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                onAccessibilityDecrement={() => {
+                  const next = Math.max(monthIndex - 1, 0);
+                  setMonthIndex(next);
+                  monthRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                style={styles.pickerColumn}
+              >
                 <ScrollView
                   ref={monthRef}
                   showsVerticalScrollIndicator={false}
@@ -165,17 +186,34 @@ export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenP
                     setMonthIndex(Math.max(0, Math.min(index, MONTHS.length - 1)));
                   }}
                   contentContainerStyle={styles.pickerContent}
+                  accessible={false}
                 >
                   {MONTHS.map((m, i) => (
-                    <View key={m} style={styles.pickerItem}>
+                    <View key={m} style={styles.pickerItem} accessible={false}>
                       <Text style={[styles.pickerText, i === monthIndex && styles.pickerTextActive]}>
                         {m}
                       </Text>
                     </View>
                   ))}
                 </ScrollView>
-              </View>
-              <View style={styles.pickerColumn}>
+              </AdjustableView>
+              <AdjustableView
+                accessible={true}
+                accessibilityRole="adjustable"
+                accessibilityLabel="Day"
+                accessibilityValue={{ text: String(dayValue) }}
+                onAccessibilityIncrement={() => {
+                  const next = Math.min(dayIndex + 1, days.length - 1);
+                  setDayIndex(next);
+                  dayRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                onAccessibilityDecrement={() => {
+                  const next = Math.max(dayIndex - 1, 0);
+                  setDayIndex(next);
+                  dayRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                style={styles.pickerColumn}
+              >
                 <ScrollView
                   ref={dayRef}
                   showsVerticalScrollIndicator={false}
@@ -189,17 +227,34 @@ export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenP
                     setDayIndex(Math.max(0, Math.min(index, days.length - 1)));
                   }}
                   contentContainerStyle={styles.pickerContent}
+                  accessible={false}
                 >
                   {days.map((d) => (
-                    <View key={d} style={styles.pickerItem}>
+                    <View key={d} style={styles.pickerItem} accessible={false}>
                       <Text style={[styles.pickerText, d === dayValue && styles.pickerTextActive]}>
                         {d}
                       </Text>
                     </View>
                   ))}
                 </ScrollView>
-              </View>
-              <View style={styles.pickerColumn}>
+              </AdjustableView>
+              <AdjustableView
+                accessible={true}
+                accessibilityRole="adjustable"
+                accessibilityLabel="Year"
+                accessibilityValue={{ text: String(year) }}
+                onAccessibilityIncrement={() => {
+                  const next = Math.min(yearIndex + 1, years.length - 1);
+                  setYearIndex(next);
+                  yearRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                onAccessibilityDecrement={() => {
+                  const next = Math.max(yearIndex - 1, 0);
+                  setYearIndex(next);
+                  yearRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                style={styles.pickerColumn}
+              >
                 <ScrollView
                   ref={yearRef}
                   showsVerticalScrollIndicator={false}
@@ -213,16 +268,17 @@ export function BirthDatePickerScreen({ onDone, onSkip }: BirthDatePickerScreenP
                     setYearIndex(Math.max(0, Math.min(index, years.length - 1)));
                   }}
                   contentContainerStyle={styles.pickerContent}
+                  accessible={false}
                 >
                   {years.map((y) => (
-                    <View key={y} style={styles.pickerItem}>
+                    <View key={y} style={styles.pickerItem} accessible={false}>
                       <Text style={[styles.pickerText, y === year && styles.pickerTextActive]}>
                         {y}
                       </Text>
                     </View>
                   ))}
                 </ScrollView>
-              </View>
+              </AdjustableView>
             </View>
 
             <GlassButton

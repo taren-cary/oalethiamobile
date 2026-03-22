@@ -151,6 +151,7 @@ export default function LogsScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <FlatList
           data={devTimelines}
@@ -192,6 +193,7 @@ export default function LogsScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <View style={[styles.centered, { paddingTop, paddingBottom }]}>
           <EmptyState
@@ -214,6 +216,7 @@ export default function LogsScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <View style={[styles.centered, styles.loadingList, { paddingTop, paddingBottom }]}>
           <SkeletonCard />
@@ -235,6 +238,7 @@ export default function LogsScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <View style={[styles.centered, { paddingTop, paddingBottom }]}>
           <GlassCard>
@@ -260,6 +264,7 @@ export default function LogsScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <View style={[styles.centered, { paddingTop, paddingBottom }]}>
           <EmptyState

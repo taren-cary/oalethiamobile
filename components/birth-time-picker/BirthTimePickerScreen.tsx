@@ -6,6 +6,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// View doesn't expose onAccessibilityIncrement/Decrement in the TS definitions for this RN
+// version, so we cast to ComponentType<any> for the adjustable picker wrappers.
+const AdjustableView = View as React.ComponentType<any>;
+
 import { GlassButton } from '@/components/glass/GlassButton';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import {
@@ -120,6 +124,7 @@ export function BirthTimePickerScreen({ onDone, onSkip }: BirthTimePickerScreenP
         source={require('@/assets/images/oalethiamobilebackground.jpeg')}
         style={styles.backgroundImage}
         contentFit="cover"
+        accessible={false}
       />
 
       <View style={styles.cardWrap}>
@@ -148,7 +153,23 @@ export function BirthTimePickerScreen({ onDone, onSkip }: BirthTimePickerScreenP
             </Text>
 
             <View style={styles.pickerRow}>
-              <View style={styles.pickerColumn}>
+              <AdjustableView
+                accessible={true}
+                accessibilityRole="adjustable"
+                accessibilityLabel="Hour"
+                accessibilityValue={{ text: String(hour) }}
+                onAccessibilityIncrement={() => {
+                  const next = Math.min(hourIndex + 1, HOURS_12.length - 1);
+                  setHourIndex(next);
+                  hourRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                onAccessibilityDecrement={() => {
+                  const next = Math.max(hourIndex - 1, 0);
+                  setHourIndex(next);
+                  hourRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                style={styles.pickerColumn}
+              >
                 <ScrollView
                   ref={hourRef}
                   showsVerticalScrollIndicator={false}
@@ -162,17 +183,34 @@ export function BirthTimePickerScreen({ onDone, onSkip }: BirthTimePickerScreenP
                     setHourIndex(Math.max(0, Math.min(index, HOURS_12.length - 1)));
                   }}
                   contentContainerStyle={styles.pickerContent}
+                  accessible={false}
                 >
                   {HOURS_12.map((h, i) => (
-                    <View key={h} style={styles.pickerItem}>
+                    <View key={h} style={styles.pickerItem} accessible={false}>
                       <Text style={[styles.pickerText, i === hourIndex && styles.pickerTextActive]}>
                         {h}
                       </Text>
                     </View>
                   ))}
                 </ScrollView>
-              </View>
-              <View style={styles.pickerColumn}>
+              </AdjustableView>
+              <AdjustableView
+                accessible={true}
+                accessibilityRole="adjustable"
+                accessibilityLabel="Minute"
+                accessibilityValue={{ text: String(minute).padStart(2, '0') }}
+                onAccessibilityIncrement={() => {
+                  const next = Math.min(minuteIndex + 1, MINUTES.length - 1);
+                  setMinuteIndex(next);
+                  minuteRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                onAccessibilityDecrement={() => {
+                  const next = Math.max(minuteIndex - 1, 0);
+                  setMinuteIndex(next);
+                  minuteRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                style={styles.pickerColumn}
+              >
                 <ScrollView
                   ref={minuteRef}
                   showsVerticalScrollIndicator={false}
@@ -186,17 +224,34 @@ export function BirthTimePickerScreen({ onDone, onSkip }: BirthTimePickerScreenP
                     setMinuteIndex(Math.max(0, Math.min(index, MINUTES.length - 1)));
                   }}
                   contentContainerStyle={styles.pickerContent}
+                  accessible={false}
                 >
                   {MINUTES.map((m, i) => (
-                    <View key={m} style={styles.pickerItem}>
+                    <View key={m} style={styles.pickerItem} accessible={false}>
                       <Text style={[styles.pickerText, i === minuteIndex && styles.pickerTextActive]}>
                         {String(m).padStart(2, '0')}
                       </Text>
                     </View>
                   ))}
                 </ScrollView>
-              </View>
-              <View style={[styles.pickerColumn, styles.ampmColumn]}>
+              </AdjustableView>
+              <AdjustableView
+                accessible={true}
+                accessibilityRole="adjustable"
+                accessibilityLabel="AM or PM"
+                accessibilityValue={{ text: ampm }}
+                onAccessibilityIncrement={() => {
+                  const next = Math.min(ampmIndex + 1, AMPM.length - 1);
+                  setAmpmIndex(next);
+                  ampmRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                onAccessibilityDecrement={() => {
+                  const next = Math.max(ampmIndex - 1, 0);
+                  setAmpmIndex(next);
+                  ampmRef.current?.scrollTo({ y: next * ITEM_HEIGHT, animated: true });
+                }}
+                style={[styles.pickerColumn, styles.ampmColumn]}
+              >
                 <ScrollView
                   ref={ampmRef}
                   showsVerticalScrollIndicator={false}
@@ -210,16 +265,17 @@ export function BirthTimePickerScreen({ onDone, onSkip }: BirthTimePickerScreenP
                     setAmpmIndex(Math.max(0, Math.min(index, AMPM.length - 1)));
                   }}
                   contentContainerStyle={styles.pickerContent}
+                  accessible={false}
                 >
                   {AMPM.map((a, i) => (
-                    <View key={a} style={styles.pickerItem}>
+                    <View key={a} style={styles.pickerItem} accessible={false}>
                       <Text style={[styles.pickerText, i === ampmIndex && styles.pickerTextActive]}>
                         {a}
                       </Text>
                     </View>
                   ))}
                 </ScrollView>
-              </View>
+              </AdjustableView>
             </View>
 
             <Pressable

@@ -121,7 +121,6 @@ export function GlassContainer({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityHint={accessibilityHint}
-        accessibilityState={{}}
       >
         {wrappedContent}
       </AnimatedPressable>

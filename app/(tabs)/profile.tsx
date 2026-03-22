@@ -344,6 +344,7 @@ export default function ProfileScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <ScrollView
           style={styles.scroll}
@@ -507,6 +508,7 @@ export default function ProfileScreen() {
         style={styles.backgroundImage}
         contentFit="cover"
         transition={300}
+        accessible={false}
       />
       <ScrollView
         style={styles.scroll}
@@ -561,6 +563,7 @@ export default function ProfileScreen() {
                   source={getLevelBadgeSource(levelData.level)}
                   style={styles.levelBadgeImage}
                   contentFit="contain"
+                  accessibilityLabel={`${levelData.levelName} badge`}
                 />
               </View>
               <View style={styles.levelTextBlock}>
@@ -569,7 +572,18 @@ export default function ProfileScreen() {
                 </Text>
                 {!levelData.isMaxLevel ? (
                   <>
-                    <View style={styles.levelProgressTrack}>
+                    <View
+                      style={styles.levelProgressTrack}
+                      accessible={true}
+                      accessibilityRole="progressbar"
+                      accessibilityLabel="Level progress"
+                      accessibilityValue={{
+                        min: 0,
+                        max: 100,
+                        now: levelData.progressPercent,
+                        text: `${levelData.progressPercent}% to Level ${levelData.level + 1}`,
+                      }}
+                    >
                       <LinearGradient
                         colors={glassColors.progressBar}
                         start={{ x: 0, y: 0 }}
@@ -738,6 +752,7 @@ export default function ProfileScreen() {
                       }
                     }}
                     accessibilityRole="switch"
+                    accessibilityLabel="Daily affirmation reminder"
                     accessibilityState={{ checked: notificationPrefs.dailyEnabled }}
                     style={({ pressed }) => [
                       styles.toggle,
@@ -787,6 +802,7 @@ export default function ProfileScreen() {
                       // When enabling, Home will schedule based on your timelines.
                     }}
                     accessibilityRole="switch"
+                    accessibilityLabel="Next actions reminders"
                     accessibilityState={{ checked: notificationPrefs.actionsEnabled }}
                     style={({ pressed }) => [
                       styles.toggle,

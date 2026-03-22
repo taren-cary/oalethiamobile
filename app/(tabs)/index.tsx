@@ -613,6 +613,7 @@ export default function HomeScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <ScrollView
           style={styles.scroll}
@@ -656,6 +657,7 @@ export default function HomeScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <ScrollView
           style={styles.scroll}

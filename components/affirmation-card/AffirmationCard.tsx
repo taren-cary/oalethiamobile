@@ -82,6 +82,7 @@ export function AffirmationCard({
           style={StyleSheet.absoluteFillObject}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <View style={styles.posterOverlay}>
           <Text style={styles.posterText}>
@@ -92,6 +93,7 @@ export function AffirmationCard({
               source={require('../../assets/images/oalethialogowhite.svg')}
               style={styles.watermarkImage}
               contentFit="contain"
+              accessible={false}
             />
           </View>
         </View>

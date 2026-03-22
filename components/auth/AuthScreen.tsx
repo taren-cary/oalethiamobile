@@ -183,6 +183,7 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
         source={require('@/assets/images/oalethiamobilebackground.jpeg')}
         style={styles.backgroundImage}
         contentFit="cover"
+        accessible={false}
       />
 
       <View style={styles.cardWrap}>
@@ -203,6 +204,7 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                   source={require('@/assets/images/oalethialogowhite.svg')}
                   style={styles.logo}
                   contentFit="contain"
+                  accessible={false}
                 />
               </View>
 
@@ -222,6 +224,9 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                     styles.modeChip,
                     isSignup && styles.modeChipActive,
                   ]}
+                  accessibilityRole="tab"
+                  accessibilityLabel="Sign up"
+                  accessibilityState={{ selected: isSignup }}
                 >
                   <Text
                     style={[
@@ -238,6 +243,9 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                     styles.modeChip,
                     !isSignup && styles.modeChipActive,
                   ]}
+                  accessibilityRole="tab"
+                  accessibilityLabel="Log in"
+                  accessibilityState={{ selected: !isSignup }}
                 >
                   <Text
                     style={[

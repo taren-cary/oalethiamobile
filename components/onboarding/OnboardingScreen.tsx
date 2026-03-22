@@ -71,6 +71,7 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
           source={item.source}
           style={StyleSheet.absoluteFill}
           contentFit="cover"
+          accessible={false}
         />
         {slideIndex === 0 && (
           <View
@@ -261,10 +262,16 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
         <View style={styles.spacer} />
         <View style={styles.bottomSection}>
           <View style={styles.placeholder} />
-          <View style={styles.dots}>
+          <View
+            accessible={true}
+            accessibilityLabel={`Slide ${index + 1} of ${SLIDES.length}`}
+            accessibilityLiveRegion="polite"
+            style={styles.dots}
+          >
             {SLIDES.map((_, i) => (
               <View
                 key={i}
+                accessible={false}
                 style={[styles.dot, i === index && styles.dotActive]}
               />
             ))}

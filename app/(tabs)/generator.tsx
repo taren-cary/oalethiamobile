@@ -246,6 +246,7 @@ export default function GeneratorScreen() {
           style={styles.backgroundImage}
           contentFit="cover"
           transition={300}
+          accessible={false}
         />
         <ScrollView
           style={styles.scroll}
