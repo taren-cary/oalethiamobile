@@ -15,11 +15,9 @@ import { GlassCard } from '@/components/glass';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiGet } from '@/lib/api';
 import {
-  generateFakeLeaderboard,
   LEVEL_NAMES,
   type LeaderboardEntry,
-} from '@/lib/mockLeaderboardData';
-import { HOME_DEV_MODE } from '@/lib/mockHomeData';
+} from '@/lib/leaderboardTypes';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
 
 const LEVEL_BADGE_SOURCES: Record<number, any> = {
@@ -93,18 +91,12 @@ function LeaderboardRow({
 
 export default function LeaderboardScreen() {
   const insets = useSafeAreaInsets();
-  const { user, session } = useAuth();
-  const useFakeData = HOME_DEV_MODE && !user;
+  const { session } = useAuth();
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchLeaderboard = useCallback(async () => {
-    if (useFakeData) {
-      setLeaderboard(generateFakeLeaderboard(25));
-      setLoading(false);
-      return;
-    }
     if (!session) {
       setLoading(false);
       return;
@@ -125,17 +117,17 @@ export default function LeaderboardScreen() {
           }));
           setLeaderboard(formatted);
         } else {
-          setLeaderboard(generateFakeLeaderboard(25));
+          setLeaderboard([]);
         }
       } else {
-        setLeaderboard(generateFakeLeaderboard(25));
+        setLeaderboard([]);
       }
     } catch {
-      setLeaderboard(generateFakeLeaderboard(25));
+      setLeaderboard([]);
     } finally {
       setLoading(false);
     }
-  }, [session, useFakeData]);
+  }, [session]);
 
   useEffect(() => {
     fetchLeaderboard();

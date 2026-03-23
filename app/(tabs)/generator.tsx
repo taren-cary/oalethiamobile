@@ -1,8 +1,3 @@
-/**
- * Generate tab – mock dev view.
- * Shows full web form fields + mock results section on one page (no auth required).
- * Replace with real submit/API + real results when implementing.
- */
 import { Image } from 'expo-image';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
@@ -18,10 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { AffirmationCard } from '@/components/affirmation-card';
 import { PressHoldGenerateButton } from '@/components/press-hold-generate/PressHoldGenerateButton';
 import { GlassButton, GlassCard, GlassTextInput } from '@/components/glass';
-import { TimelineActionCard } from '@/components/timeline-action-card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGenerationResult } from '@/contexts/GenerationResultContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -38,21 +31,6 @@ const APPROACHES: { value: Approach; label: string; desc: string }[] = [
   { value: 'balanced', label: 'Balanced', desc: 'Mix of steady and bold moves' },
   { value: 'aggressive', label: 'Aggressive', desc: 'Bold, high-impact actions' },
 ];
-
-/** Mock result data for dev preview of results section */
-const MOCK_ACTIONS = [
-  { date: 'Mar 5, 2025', action: 'Set a clear intention for your goal and write it down.', transit: 'Moon in Capricorn', strategy: 'Focus on one outcome.' },
-  { date: 'Mar 12, 2025', action: 'Take one small step toward your outcome—research or reach out to one person.', transit: 'Mercury trine Saturn', strategy: 'One action is enough.' },
-  { date: 'Mar 19, 2025', action: 'Review progress and adjust your next step based on what you learned.', transit: 'Sun in Pisces', strategy: 'Reflect and refine.' },
-];
-const MOCK_AFFIRMATION = "I am aligned with the right timing. Each step I take is supported by the cosmos.";
-const MOCK_GOAL = "Hit $10,000 per month in revenue";
-const MOCK_TODAY = new Date().toLocaleDateString('en-US', {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
 
 export default function GeneratorScreen() {
   const router = useRouter();
@@ -478,43 +456,6 @@ export default function GeneratorScreen() {
           </View>
         )}
 
-        {/* ---------- Mock results section (dev preview) ---------- */}
-        <View style={styles.mockResults}>
-          <Text style={styles.mockResultsTitle}>Results (mock preview)</Text>
-          <View style={styles.outcomeBlock}>
-            <Text style={styles.outcomeLabel}>Goal</Text>
-            <Text style={styles.outcomeText}>{MOCK_GOAL}</Text>
-            <Text style={styles.aiNote}>This is AI generated content.</Text>
-          </View>
-
-          {MOCK_ACTIONS.map((action, index) => (
-            <View key={index} style={styles.actionCardWrapper}>
-              <TimelineActionCard
-                date={action.date}
-                action={action.action}
-                transit={action.transit}
-                strategy={action.strategy}
-                completed={false}
-                onToggleComplete={() => {}}
-                onSkip={() => {}}
-                staggerIndex={index}
-                reduceMotion={false}
-              />
-            </View>
-          ))}
-          <Text style={styles.moreText}>+2 more actions when saved</Text>
-
-          <AffirmationCard
-            text={MOCK_AFFIRMATION}
-            date={MOCK_TODAY}
-            affirmed={false}
-            onAffirm={() => {}}
-            onShare={() => {}}
-          />
-
-          <GlassButton title="Save timeline" onPress={() => {}} style={[styles.resultBtn, styles.resultBtnPrimary]} accessibilityLabel="Save timeline (mock)" />
-          <GlassButton title="Generate another" onPress={() => {}} variant="secondary" accessibilityLabel="Generate another (mock)" />
-        </View>
       </ScrollView>
     </View>
   );
@@ -616,32 +557,6 @@ const styles = StyleSheet.create({
     marginTop: glassSpacing.sm,
     marginBottom: glassSpacing.xs,
   },
-  mockResults: {
-    paddingTop: glassSpacing.lg,
-    paddingBottom: glassSpacing.xxl,
-  },
-  mockResultsTitle: {
-    ...glassTypography.h4,
-    color: glassColors.text.tertiary,
-    marginBottom: glassSpacing.md,
-  },
-  outcomeBlock: {
-    marginBottom: glassSpacing.lg,
-  },
-  outcomeLabel: {
-    ...glassTypography.labelSmall,
-    color: glassColors.text.tertiary,
-    marginBottom: 4,
-  },
-  outcomeText: {
-    ...glassTypography.h4,
-    color: glassColors.text.primary,
-  },
-  aiNote: {
-    ...glassTypography.bodySmall,
-    color: glassColors.text.tertiary,
-    marginTop: 6,
-  },
   lottieContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -650,17 +565,6 @@ const styles = StyleSheet.create({
   lottie: {
     width: 180,
     height: 180,
-  },
-  actionCardWrapper: {
-    marginBottom: glassSpacing.md,
-  },
-  moreText: {
-    ...glassTypography.bodySmall,
-    color: glassColors.text.tertiary,
-    marginBottom: glassSpacing.md,
-  },
-  resultBtn: {
-    marginBottom: glassSpacing.md,
   },
   resultBtnPrimary: {
     marginTop: glassSpacing.lg,

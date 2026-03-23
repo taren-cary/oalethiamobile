@@ -25,14 +25,9 @@ import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet } from '@/lib/api';
 import { IapService } from '@/iap/IapService';
 import {
-  generateFakeLeaderboard,
   LEVEL_NAMES,
   type LeaderboardEntry,
-} from '@/lib/mockLeaderboardData';
-import {
-  getMockHomeData,
-  HOME_DEV_MODE,
-} from '@/lib/mockHomeData';
+} from '@/lib/leaderboardTypes';
 import { supabase, supabaseUrl } from '@/lib/supabase';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
 import {
@@ -76,19 +71,11 @@ export default function ProfileScreen() {
   const { invalidateAt } = usePointsRefresh();
   const subscriptionCtx = useSubscription();
 
-  // Phase 1: dev/mock view for design & UX
-  const useDevProfileData = HOME_DEV_MODE && !user;
-  const mockData = useDevProfileData ? getMockHomeData() : null;
-
-  const [profileLoading, setProfileLoading] = useState(!useDevProfileData);
-  const [levelLoading, setLevelLoading] = useState(!useDevProfileData);
-  const [subscriptionLoading, setSubscriptionLoading] = useState(!useDevProfileData);
-  const [streak, setStreak] = useState(
-    useDevProfileData && mockData ? mockData.streak : 0
-  );
-  const [levelData, setLevelData] = useState<LevelData | null>(
-    useDevProfileData && mockData ? mockData.levelData : null
-  );
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [levelLoading, setLevelLoading] = useState(true);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [streak, setStreak] = useState(0);
+  const [levelData, setLevelData] = useState<LevelData | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<{
     tier?: { name?: string };
     isFree?: boolean;
@@ -105,10 +92,6 @@ export default function ProfileScreen() {
   const [iapRestoring, setIapRestoring] = useState(false);
 
   const fetchProfile = useCallback(async () => {
-    if (useDevProfileData) {
-      setProfileLoading(false);
-      return;
-    }
     if (!session) {
       setProfileLoading(false);
       return;
@@ -124,13 +107,9 @@ export default function ProfileScreen() {
     } finally {
       setProfileLoading(false);
     }
-  }, [session, useDevProfileData]);
+  }, [session]);
 
   const fetchLevel = useCallback(async () => {
-    if (useDevProfileData) {
-      setLevelLoading(false);
-      return;
-    }
     if (!session) {
       setLevelLoading(false);
       return;
@@ -154,18 +133,9 @@ export default function ProfileScreen() {
     } finally {
       setLevelLoading(false);
     }
-  }, [session, useDevProfileData]);
+  }, [session]);
 
   const fetchSubscription = useCallback(async () => {
-    if (useDevProfileData) {
-      setSubscriptionStatus({
-        isFree: true,
-        status: 'active',
-        tier: { name: 'Free' },
-      });
-      setSubscriptionLoading(false);
-      return;
-    }
     if (!session) {
       setSubscriptionLoading(false);
       return;
@@ -183,14 +153,9 @@ export default function ProfileScreen() {
     } finally {
       setSubscriptionLoading(false);
     }
-  }, [session, useDevProfileData]);
+  }, [session]);
 
   const fetchLeaderboardPreview = useCallback(async () => {
-    if (useDevProfileData) {
-      setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
-      setLeaderboardPreviewLoading(false);
-      return;
-    }
     if (!session) {
       setLeaderboardPreviewLoading(false);
       return;
@@ -210,17 +175,17 @@ export default function ProfileScreen() {
           }));
           setLeaderboardPreview(formatted);
         } else {
-          setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
+          setLeaderboardPreview([]);
         }
       } else {
-        setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
+        setLeaderboardPreview([]);
       }
     } catch {
-      setLeaderboardPreview(generateFakeLeaderboard(25).slice(0, 3));
+      setLeaderboardPreview([]);
     } finally {
       setLeaderboardPreviewLoading(false);
     }
-  }, [session, useDevProfileData]);
+  }, [session]);
 
   useEffect(() => {
     fetchProfile();
@@ -230,7 +195,7 @@ export default function ProfileScreen() {
   }, [fetchProfile, fetchLevel, fetchSubscription, fetchLeaderboardPreview]);
 
   useEffect(() => {
-    if (useDevProfileData || subscriptionCtx.loading) return;
+    if (subscriptionCtx.loading) return;
     setSubscriptionLoading(false);
     setSubscriptionStatus({
       isFree: subscriptionCtx.isFree,
@@ -245,7 +210,7 @@ export default function ProfileScreen() {
   ]);
 
   const fetchAvatarUrl = useCallback(async () => {
-    if (useDevProfileData || !user) {
+    if (!user) {
       setAvatarUrl(null);
       return;
     }
@@ -259,7 +224,7 @@ export default function ProfileScreen() {
     } catch {
       setAvatarUrl(null);
     }
-  }, [user, useDevProfileData]);
+  }, [user]);
 
   useEffect(() => {
     fetchAvatarUrl();
@@ -324,19 +289,15 @@ export default function ProfileScreen() {
   }, [user, avatarUploading]);
 
   useEffect(() => {
-    if (useDevProfileData || invalidateAt <= 0) {
-      return;
-    }
-    if (invalidateAt > 0) {
-      fetchLevel();
-      fetchProfile();
-    }
-  }, [invalidateAt, fetchLevel, fetchProfile, useDevProfileData]);
+    if (invalidateAt <= 0) return;
+    fetchLevel();
+    fetchProfile();
+  }, [invalidateAt, fetchLevel, fetchProfile]);
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
 
-  if (!user && !useDevProfileData) {
+  if (!user) {
     return (
       <View style={styles.container}>
         <Image
@@ -360,8 +321,7 @@ export default function ProfileScreen() {
     );
   }
 
-  const displayEmail =
-    user?.email ?? (useDevProfileData ? 'demo@oalethia.app' : 'Signed in');
+  const displayEmail = user?.email ?? 'Signed in';
   const displayInitial = displayEmail.charAt(0).toUpperCase();
 
   const handleDeleteAccount = useCallback(() => {
@@ -433,10 +393,6 @@ export default function ProfileScreen() {
         return;
       }
       if (label === 'Restore Purchases') {
-        if (useDevProfileData) {
-          Alert.alert('Restore purchases', 'Dev profile mode is enabled.');
-          return;
-        }
         if (!user || !session) {
           Alert.alert('Not signed in', 'Please sign in before restoring purchases.');
           return;
@@ -523,7 +479,7 @@ export default function ProfileScreen() {
         {/* Avatar + welcome + username */}
         <View style={styles.headerBlock}>
           <Pressable
-            onPress={!useDevProfileData && user && !avatarUploading ? pickAndUploadAvatar : undefined}
+            onPress={user && !avatarUploading ? pickAndUploadAvatar : undefined}
             style={({ pressed }) => [
               styles.avatarLarge,
               pressed && !avatarUploading && styles.avatarPressed,

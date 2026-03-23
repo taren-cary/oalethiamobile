@@ -25,12 +25,10 @@ import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
 import {
-  getMockHomeData,
   getNextActionItem,
-  HOME_DEV_MODE,
   type NextActionItem,
   type TodayAffirmationItem,
-} from '@/lib/mockHomeData';
+} from '@/lib/homeUtils';
 import { getProgress, saveProgress } from '@/lib/progress-storage';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline } from '@/types/timeline';
@@ -79,43 +77,20 @@ export default function HomeScreen() {
   const { setLevelUp } = useLevelUp();
   const { invalidate, invalidateAt } = usePointsRefresh();
 
-  const useDevHomeData = HOME_DEV_MODE && !user;
-  const mockData = useDevHomeData ? getMockHomeData() : null;
-
-  const [profileLoading, setProfileLoading] = useState(!useDevHomeData);
-  const [levelLoading, setLevelLoading] = useState(!useDevHomeData);
-  const [streak, setStreak] = useState(
-    useDevHomeData && mockData ? mockData.streak : 0
-  );
-  const [levelData, setLevelData] = useState<LevelData | null>(
-    useDevHomeData && mockData ? mockData.levelData : null
-  );
-  const [latestTimeline, setLatestTimeline] = useState<SavedTimeline | null>(
-    useDevHomeData && mockData ? mockData.latestTimeline : null
-  );
-  const [affirmationText, setAffirmationText] = useState(
-    useDevHomeData && mockData
-      ? mockData.affirmationText
-      : DEFAULT_AFFIRMATION
-  );
-  const [affirmationIndex, setAffirmationIndex] = useState(
-    useDevHomeData && mockData ? mockData.affirmationIndex : 0
-  );
-  const [affirmed, setAffirmed] = useState(
-    useDevHomeData && mockData ? mockData.affirmed : false
-  );
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [levelLoading, setLevelLoading] = useState(true);
+  const [streak, setStreak] = useState(0);
+  const [levelData, setLevelData] = useState<LevelData | null>(null);
+  const [latestTimeline, setLatestTimeline] = useState<SavedTimeline | null>(null);
+  const [affirmationText, setAffirmationText] = useState(DEFAULT_AFFIRMATION);
+  const [affirmationIndex, setAffirmationIndex] = useState(0);
+  const [affirmed, setAffirmed] = useState(false);
   const [affirmationImageUrl, setAffirmationImageUrl] = useState<string | null>(null);
   const [affirmLoading, setAffirmLoading] = useState(false);
-  /** Dev only: track which timeline IDs were affirmed in the swipeable carousel. */
-  const [affirmedTimelineIdsDev, setAffirmedTimelineIdsDev] = useState<string[]>([]);
-  /** Signed-in: all today's affirmations (one per timeline). Null while loading. */
+  /** All today's affirmations (one per timeline). Null while loading. */
   const [todayAffirmations, setTodayAffirmations] = useState<TodayAffirmationItem[] | null>(null);
-  /** Signed-in: timeline ID whose Affirm is currently in progress. */
+  /** Timeline ID whose Affirm is currently in progress. */
   const [affirmLoadingId, setAffirmLoadingId] = useState<string | null>(null);
-  /** Dev only: completed/skipped per timeline for next-action cards. */
-  const [devNextActionProgress, setDevNextActionProgress] = useState<
-    Record<string, { completed: number[]; skipped: number[] }>
-  >({});
   /** Signed-in: all recent timelines (for next-action cards). */
   const [recentTimelines, setRecentTimelines] = useState<SavedTimeline[] | null>(null);
   /** Signed-in: progress (completed/skipped) per timeline from AsyncStorage. */
@@ -269,13 +244,10 @@ export default function HomeScreen() {
   }, [user, session]);
 
   useEffect(() => {
-    if (useDevHomeData) {
-      return;
-    }
     fetchProfile();
     fetchLevel();
     fetchRecentTimelinesAndAffirmations();
-  }, [fetchProfile, fetchLevel, fetchRecentTimelinesAndAffirmations, useDevHomeData]);
+  }, [fetchProfile, fetchLevel, fetchRecentTimelinesAndAffirmations]);
 
   // Load notification preferences once so we can coordinate scheduling on this screen.
   useEffect(() => {
@@ -295,19 +267,17 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    if (useDevHomeData || invalidateAt <= 0) {
-      return;
-    }
+    if (invalidateAt <= 0) return;
     fetchLevel();
     fetchProfile();
-  }, [invalidateAt, fetchLevel, fetchProfile, useDevHomeData]);
+  }, [invalidateAt, fetchLevel, fetchProfile]);
 
   /** When returning to Home (e.g. from timeline detail), refetch timelines, progress, and today's affirmations so everything stays in sync. */
   useFocusEffect(
     useCallback(() => {
-      if (useDevHomeData || !user || !session) return;
+      if (!user || !session) return;
       fetchRecentTimelinesAndAffirmations();
-    }, [useDevHomeData, user, session, fetchRecentTimelinesAndAffirmations])
+    }, [user, session, fetchRecentTimelinesAndAffirmations])
   );
 
   const handleAffirmForTimeline = useCallback(
@@ -352,17 +322,6 @@ export default function HomeScreen() {
   );
 
   const handleAffirm = useCallback(async () => {
-    if (useDevHomeData) {
-      if (affirmLoading || affirmed) {
-        return;
-      }
-      setAffirmLoading(true);
-      setAffirmed(true);
-      setTimeout(() => {
-        setAffirmLoading(false);
-      }, 300);
-      return;
-    }
     if (!session || affirmLoading) return;
     const single = todayAffirmations?.length === 1 ? todayAffirmations[0] : null;
     if (single) {
@@ -400,18 +359,7 @@ export default function HomeScreen() {
     } finally {
       setAffirmLoading(false);
     }
-  }, [
-    session,
-    latestTimeline?.id,
-    affirmationIndex,
-    affirmationText,
-    affirmLoading,
-    affirmed,
-    todayAffirmations,
-    handleAffirmForTimeline,
-    setLevelUp,
-    invalidate,
-  ]);
+  }, [session, latestTimeline?.id, affirmationIndex, affirmationText, affirmLoading, affirmed, todayAffirmations, handleAffirmForTimeline, setLevelUp, invalidate]);
 
   const todayFormatted = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -420,71 +368,15 @@ export default function HomeScreen() {
     day: 'numeric',
   });
 
-  // Swipeable card (poster-only swipe, fixed Affirm/Share, one-page-per-swipe) for both dev and signed-in when 2+ affirmations
-  const showSwipeableAffirmations =
-    (useDevHomeData &&
-      mockData?.todayAffirmations &&
-      mockData.todayAffirmations.length > 1) ||
-    (!useDevHomeData &&
-      todayAffirmations !== null &&
-      todayAffirmations.length > 1);
+  const showSwipeableAffirmations = todayAffirmations !== null && todayAffirmations.length > 1;
 
-  const carouselData: TodayAffirmationItem[] = showSwipeableAffirmations
-    ? useDevHomeData
-      ? mockData!.todayAffirmations
-      : todayAffirmations!
-    : [];
+  const carouselData: TodayAffirmationItem[] = showSwipeableAffirmations ? todayAffirmations! : [];
 
-  const carouselDataForCard = useMemo(
-    () =>
-      useDevHomeData && carouselData.length
-        ? carouselData.map((item) => ({
-            ...item,
-            affirmed:
-              item.affirmed || affirmedTimelineIdsDev.includes(item.timelineId),
-          }))
-        : carouselData,
-    [carouselData, useDevHomeData, affirmedTimelineIdsDev]
-  );
+  const carouselDataForCard = useMemo(() => carouselData, [carouselData]);
 
-  /** Dev: next-action items derived from mock data + local complete/skip state, ordered by next action date (closest first). */
-  const devNextActionItems = useMemo((): NextActionItem[] => {
-    if (!useDevHomeData || !mockData?.recentTimelinesWithNextActions) return [];
-    const items = mockData.recentTimelinesWithNextActions
-      .map((item) => {
-        const progress = devNextActionProgress[item.timeline.id];
-        const completed = progress?.completed ?? item.completed;
-        const skipped = progress?.skipped ?? item.skipped;
-        return getNextActionItem(item.timeline, completed, skipped);
-      })
-      .filter((x): x is NextActionItem => x != null);
-    items.sort((a, b) => (a.nextAction.date < b.nextAction.date ? -1 : a.nextAction.date > b.nextAction.date ? 1 : 0));
-    return items;
-  }, [useDevHomeData, mockData?.recentTimelinesWithNextActions, devNextActionProgress]);
-
-  const handleDevNextActionToggleComplete = useCallback((timelineId: string, actionIndex: number) => {
-    setDevNextActionProgress((prev) => {
-      const cur = prev[timelineId] ?? { completed: [], skipped: [] };
-      const completed = cur.completed.includes(actionIndex)
-        ? cur.completed.filter((i) => i !== actionIndex)
-        : [...cur.completed, actionIndex];
-      return { ...prev, [timelineId]: { ...cur, completed } };
-    });
-  }, []);
-
-  const handleDevNextActionSkip = useCallback((timelineId: string, actionIndex: number) => {
-    setDevNextActionProgress((prev) => {
-      const cur = prev[timelineId] ?? { completed: [], skipped: [] };
-      const skipped = cur.skipped.includes(actionIndex)
-        ? cur.skipped
-        : [...cur.skipped, actionIndex];
-      return { ...prev, [timelineId]: { ...cur, skipped } };
-    });
-  }, []);
-
-  /** Signed-in: next-action items from recentTimelines + progressByTimelineId, ordered by next action date (closest first). */
+  /** Next-action items from recentTimelines + progressByTimelineId, ordered by next action date (closest first). */
   const realNextActionItems = useMemo((): NextActionItem[] => {
-    if (useDevHomeData || !recentTimelines?.length) return [];
+    if (!recentTimelines?.length) return [];
     const items = recentTimelines
       .map((timeline) => {
         const progress = progressByTimelineId[timeline.id];
@@ -495,11 +387,11 @@ export default function HomeScreen() {
       .filter((x): x is NextActionItem => x != null);
     items.sort((a, b) => (a.nextAction.date < b.nextAction.date ? -1 : a.nextAction.date > b.nextAction.date ? 1 : 0));
     return items;
-  }, [useDevHomeData, recentTimelines, progressByTimelineId]);
+  }, [recentTimelines, progressByTimelineId]);
 
   // Keep next-action reminders roughly in sync with the current "next actions".
   useEffect(() => {
-    if (!notificationPrefsLoaded || useDevHomeData || !user) {
+    if (!notificationPrefsLoaded || !user) {
       return;
     }
     let cancelled = false;
@@ -517,7 +409,7 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [notificationPrefsLoaded, useDevHomeData, user, realNextActionItems]);
+  }, [notificationPrefsLoaded, user, realNextActionItems]);
 
   const handleRealNextActionToggleComplete = useCallback(
     async (timelineId: string, actionIndex: number) => {
@@ -592,16 +484,10 @@ export default function HomeScreen() {
     [progressByTimelineId, session]
   );
 
-  const handleDevCarouselAffirm = useCallback((timelineId: string) => {
-    setAffirmedTimelineIdsDev((prev) =>
-      prev.includes(timelineId) ? prev : [...prev, timelineId]
-    );
-  }, []);
-
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
 
-  const shouldGateBirthData = !!user && !useDevHomeData && isFirstTimeUser;
+  const shouldGateBirthData = !!user && isFirstTimeUser;
 
   if (shouldGateBirthData) {
     const paddingTop = insets.top + glassSpacing.md;
@@ -649,7 +535,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (!user && !useDevHomeData) {
+  if (!user) {
     return (
       <View style={styles.container}>
         <Image
@@ -767,62 +653,37 @@ export default function HomeScreen() {
             items={carouselDataForCard}
             date={todayFormatted}
             onAffirm={(item) => {
-              if (useDevHomeData) {
-                handleDevCarouselAffirm(item.timelineId);
-              } else {
-                handleAffirmForTimeline(
-                  item.timelineId,
-                  item.affirmationIndex,
-                  item.affirmationText
-                );
-              }
+              handleAffirmForTimeline(
+                item.timelineId,
+                item.affirmationIndex,
+                item.affirmationText
+              );
             }}
             onShare={() => {}}
-            affirmLoadingId={useDevHomeData ? undefined : affirmLoadingId}
+            affirmLoadingId={affirmLoadingId}
           />
-        ) : !useDevHomeData && todayAffirmations === null ? (
+        ) : todayAffirmations === null ? (
           <View style={styles.affirmationLoading}>
             <ActivityIndicator size="small" color={glassColors.primary} />
             <Text style={styles.affirmationLoadingText}>Loading affirmations…</Text>
           </View>
-        ) : (useDevHomeData && mockData?.latestTimeline && !showSwipeableAffirmations) ||
-          (!useDevHomeData && todayAffirmations?.length === 1) ? (
-          (() => {
-            const single = useDevHomeData
-              ? {
-                  text: mockData!.affirmationText,
-                  imageUrl: null as string | null,
-                  affirmed: mockData!.affirmed,
-                  onAffirm: handleAffirm,
-                  timelineId: mockData!.latestTimeline.id,
-                }
-              : {
-                  text: todayAffirmations![0].affirmationText,
-                  imageUrl: todayAffirmations![0].imageUrl,
-                  affirmed: todayAffirmations![0].affirmed,
-                  onAffirm: () =>
-                    handleAffirmForTimeline(
-                      todayAffirmations![0].timelineId,
-                      todayAffirmations![0].affirmationIndex,
-                      todayAffirmations![0].affirmationText
-                    ),
-                  timelineId: todayAffirmations![0].timelineId,
-                };
-            return (
-              <AffirmationCard
-                text={single.text}
-                date={todayFormatted}
-                affirmed={single.affirmed}
-                onAffirm={single.onAffirm}
-                imageUrl={single.imageUrl}
-                affirmLoading={
-                  !useDevHomeData && affirmLoadingId === single.timelineId
-                }
-                onShare={() => {}}
-              />
-            );
-          })()
-        ) : !useDevHomeData && todayAffirmations?.length === 0 ? (
+        ) : todayAffirmations?.length === 1 ? (
+          <AffirmationCard
+            text={todayAffirmations[0].affirmationText}
+            date={todayFormatted}
+            affirmed={todayAffirmations[0].affirmed}
+            onAffirm={() =>
+              handleAffirmForTimeline(
+                todayAffirmations[0].timelineId,
+                todayAffirmations[0].affirmationIndex,
+                todayAffirmations[0].affirmationText
+              )
+            }
+            imageUrl={todayAffirmations[0].imageUrl}
+            affirmLoading={affirmLoadingId === todayAffirmations[0].timelineId}
+            onShare={() => {}}
+          />
+        ) : todayAffirmations?.length === 0 ? (
           <GlassCard>
             <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>
             <Text style={styles.noAffirmationBody}>
@@ -856,57 +717,44 @@ export default function HomeScreen() {
           </GlassCard>
         )}
 
-        {(useDevHomeData && devNextActionItems.length > 0) ||
-        (!useDevHomeData && realNextActionItems.length > 0) ? (
+        {realNextActionItems.length > 0 ? (
           <View style={styles.nextActionsSection}>
             <Text style={styles.nextActionsSectionTitle}>Your next actions</Text>
             <Text style={styles.nextActionsSectionSubtitle}>
               One card per timeline — complete or skip to advance
             </Text>
-            {(useDevHomeData ? devNextActionItems : realNextActionItems).map(
-              (item) => (
-                <NextActionCard
-                  key={item.timeline.id}
-                  timelineId={item.timeline.id}
-                  outcome={item.timeline.outcome}
-                  action={item.nextAction}
-                  actionIndex={item.nextActionOriginalIndex}
-                  completed={item.completed.includes(item.nextActionOriginalIndex)}
-                  onToggleComplete={() =>
-                    useDevHomeData
-                      ? handleDevNextActionToggleComplete(
-                          item.timeline.id,
-                          item.nextActionOriginalIndex
-                        )
-                      : handleRealNextActionToggleComplete(
-                          item.timeline.id,
-                          item.nextActionOriginalIndex
-                        )
-                  }
-                  onSkip={() =>
-                    useDevHomeData
-                      ? handleDevNextActionSkip(
-                          item.timeline.id,
-                          item.nextActionOriginalIndex
-                        )
-                      : handleRealNextActionSkip(
-                          item.timeline.id,
-                          item.nextActionOriginalIndex
-                        )
-                  }
-                  onViewTimeline={() =>
-                    router.push({
-                      pathname: '/timeline/[id]',
-                      params: { id: item.timeline.id },
-                    })
-                  }
-                  pulse
-                  reduceMotion={false}
-                />
-              )
-            )}
+            {realNextActionItems.map((item) => (
+              <NextActionCard
+                key={item.timeline.id}
+                timelineId={item.timeline.id}
+                outcome={item.timeline.outcome}
+                action={item.nextAction}
+                actionIndex={item.nextActionOriginalIndex}
+                completed={item.completed.includes(item.nextActionOriginalIndex)}
+                onToggleComplete={() =>
+                  handleRealNextActionToggleComplete(
+                    item.timeline.id,
+                    item.nextActionOriginalIndex
+                  )
+                }
+                onSkip={() =>
+                  handleRealNextActionSkip(
+                    item.timeline.id,
+                    item.nextActionOriginalIndex
+                  )
+                }
+                onViewTimeline={() =>
+                  router.push({
+                    pathname: '/timeline/[id]',
+                    params: { id: item.timeline.id },
+                  })
+                }
+                pulse
+                reduceMotion={false}
+              />
+            ))}
           </View>
-        ) : !useDevHomeData ? (
+        ) : (
           <GlassCard>
             <Text style={styles.noAffirmationTitle}>No actions yet</Text>
             <Text style={styles.noAffirmationBody}>
@@ -922,7 +770,7 @@ export default function HomeScreen() {
               />
             </View>
           </GlassCard>
-        ) : null}
+        )}
       </ScrollView>
     </View>
   );

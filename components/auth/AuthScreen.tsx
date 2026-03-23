@@ -160,11 +160,6 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
     longitude,
   ]);
 
-  const handleDevBypass = useCallback(() => {
-    Haptics.selectionAsync();
-    onDone();
-  }, [onDone]);
-
   const isSignup = mode === 'signup';
 
   return (
@@ -339,16 +334,6 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                 </Text>
               </Pressable>
 
-              <Pressable
-                onPress={handleDevBypass}
-                style={styles.devBypass}
-                accessibilityRole="button"
-                accessibilityLabel="Skip auth and continue to app"
-              >
-                <Text style={styles.devBypassText}>
-                  Skip auth and continue (dev only)
-                </Text>
-              </Pressable>
             </ScrollView>
           </BlurView>
         </LinearGradient>
@@ -439,15 +424,6 @@ const styles = StyleSheet.create({
   switchText: {
     ...glassTypography.body,
     color: glassColors.accent,
-    textAlign: 'center',
-  },
-  devBypass: {
-    marginTop: glassSpacing.lg,
-    alignSelf: 'center',
-  },
-  devBypassText: {
-    ...glassTypography.bodySmall,
-    color: glassColors.text.tertiary,
     textAlign: 'center',
   },
   errorWrap: {
