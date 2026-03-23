@@ -12,7 +12,7 @@ import ViewShot from 'react-native-view-shot';
 
 import { AffirmationPoster } from './AffirmationPoster';
 import { GlassButton, GlassCard } from '@/components/glass';
-import type { TodayAffirmationItem } from '@/lib/mockHomeData';
+import type { TodayAffirmationItem } from '@/lib/homeUtils';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
 
 const TITLE = "Today's cosmic affirmation";

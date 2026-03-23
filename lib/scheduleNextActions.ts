@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { NextActionItem } from '@/lib/mockHomeData';
+import type { NextActionItem } from '@/lib/homeUtils';
 import { parseActionDate } from '@/lib/parseActionDate';
 import type { TimeOfDay } from '@/lib/notifications';
 import { ACTION_IDS_KEY, requestNotificationPermissions } from '@/lib/notifications';

@@ -22,7 +22,7 @@ import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
 import { getProgress, saveProgress } from '@/lib/progress-storage';
-import { getMockHomeData, getNextActionItem, HOME_DEV_MODE } from '@/lib/mockHomeData';
+import { getNextActionItem } from '@/lib/homeUtils';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline, TimelineAction } from '@/types/timeline';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
@@ -47,9 +47,7 @@ export default function TimelineDetailScreen() {
   const { setShare } = useShare();
   const { setLevelUp } = useLevelUp();
   const { invalidate } = usePointsRefresh();
-  const { tier, isFree } = useSubscription();
-
-  const useDevTimeline = HOME_DEV_MODE && !user;
+  const { isFree } = useSubscription();
 
   const [timeline, setTimeline] = useState<SavedTimeline | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,8 +61,10 @@ export default function TimelineDetailScreen() {
   const [affirmLoading, setAffirmLoading] = useState(false);
 
   const loadTimeline = useCallback(async () => {
-    if (useDevTimeline) return;
-    if (!id || !user) return;
+    if (!id || !user) {
+      setLoading(false);
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('action_timeline_generations')
@@ -83,11 +83,11 @@ export default function TimelineDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [id, user, useDevTimeline]);
+  }, [id, user]);
 
   const loadProgress = useCallback(async () => {
     if (!id) return;
-    if (session && !useDevTimeline) {
+    if (session) {
       try {
         const res = await apiGet(`/api/action-progress/${id}`, session);
         if (res.ok) {
@@ -99,23 +99,25 @@ export default function TimelineDetailScreen() {
           setCompletedActions(completed);
           setSkippedActions(skipped);
           await saveProgress(id, { completed, skipped });
+          const p = await getProgress(id);
+          setAffirmationIndex(p.affirmationIndex);
+          const today = new Date().toDateString();
+          setAffirmed(p.affirmedDate === today);
+          return;
         }
       } catch {
         // fall through to local
       }
     }
     const p = await getProgress(id);
-    if (!session || useDevTimeline) {
-      setCompletedActions(p.completed);
-      setSkippedActions(p.skipped);
-    }
+    setCompletedActions(p.completed);
+    setSkippedActions(p.skipped);
     setAffirmationIndex(p.affirmationIndex);
     const today = new Date().toDateString();
     setAffirmed(p.affirmedDate === today);
-  }, [id, session, useDevTimeline]);
+  }, [id, session]);
 
   const loadTodayAffirmation = useCallback(async () => {
-    if (useDevTimeline) return;
     if (!id || !session) return;
     try {
       const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -136,45 +138,16 @@ export default function TimelineDetailScreen() {
         setAffirmationText(timeline.timeline_affirmations[idx]);
       }
     }
-  }, [id, session, timeline?.timeline_affirmations, affirmationIndex, useDevTimeline]);
+  }, [id, session, timeline?.timeline_affirmations, affirmationIndex]);
 
   useEffect(() => {
-    if (!useDevTimeline) {
-      loadTimeline();
-    }
+    loadTimeline();
     loadProgress();
-  }, [loadTimeline, loadProgress, useDevTimeline]);
+  }, [loadTimeline, loadProgress]);
 
   useEffect(() => {
-    if (useDevTimeline) return;
     if (timeline && user && session) loadTodayAffirmation();
-  }, [timeline, user, session, loadTodayAffirmation, useDevTimeline]);
-
-  useEffect(() => {
-    if (!useDevTimeline || !id) return;
-    const mock = getMockHomeData();
-    const timelines: SavedTimeline[] = [
-      mock.latestTimeline,
-      ...mock.recentTimelinesWithNextActions.map((item) => item.timeline),
-    ];
-    const selected =
-      timelines.find((t) => t.id === id) ?? timelines[0];
-    setTimeline(selected);
-
-    const affirmSource =
-      mock.todayAffirmations.find((a) => a.timelineId === selected.id) ??
-      mock.todayAffirmations[0];
-
-    if (affirmSource) {
-      setAffirmationIndex(affirmSource.affirmationIndex);
-      setAffirmationText(affirmSource.affirmationText);
-      setAffirmationImageUrl(affirmSource.imageUrl ?? null);
-      setAffirmed(affirmSource.affirmed);
-    }
-
-    setLoading(false);
-    setError(null);
-  }, [useDevTimeline, id]);
+  }, [timeline, user, session, loadTodayAffirmation]);
 
   useEffect(() => {
     if (timeline?.timeline_affirmations?.length && !affirmationText) {
@@ -189,7 +162,7 @@ export default function TimelineDetailScreen() {
         : [...completedActions, index];
       setCompletedActions(next);
       await saveProgress(id!, { completed: next });
-      if (session && !useDevTimeline && id) {
+      if (session && id) {
         try {
           const res = await apiPost(
             '/api/action-progress',
@@ -217,7 +190,7 @@ export default function TimelineDetailScreen() {
         }
       }
     },
-    [id, session, completedActions, useDevTimeline, setLevelUp, invalidate]
+    [id, session, completedActions, setLevelUp, invalidate]
   );
 
   const skipAction = useCallback(
@@ -225,7 +198,7 @@ export default function TimelineDetailScreen() {
       const next = [...skippedActions, index];
       setSkippedActions(next);
       await saveProgress(id!, { skipped: next });
-      if (session && !useDevTimeline && id) {
+      if (session && id) {
         try {
           await apiPost(
             '/api/action-progress',
@@ -242,23 +215,10 @@ export default function TimelineDetailScreen() {
         }
       }
     },
-    [id, session, skippedActions, useDevTimeline]
+    [id, session, skippedActions]
   );
 
   const handleAffirm = useCallback(async () => {
-    if (useDevTimeline) {
-      if (!id || affirmLoading) return;
-      setAffirmLoading(true);
-      const today = new Date().toDateString();
-      setAffirmed(true);
-      saveProgress(id, {
-        affirmationIndex,
-        affirmationDate: today,
-        affirmedDate: today,
-      });
-      setTimeout(() => setAffirmLoading(false), 300);
-      return;
-    }
     if (!session || !id || affirmLoading) return;
     setAffirmLoading(true);
     const today = new Date().toDateString();
@@ -294,22 +254,15 @@ export default function TimelineDetailScreen() {
     } finally {
       setAffirmLoading(false);
     }
-  }, [id, session, affirmationIndex, affirmationText, timeline, affirmLoading, setLevelUp, invalidate, useDevTimeline]);
+  }, [id, session, affirmationIndex, affirmationText, timeline, affirmLoading, setLevelUp, invalidate]);
 
   const visibleActions =
     timeline?.actions?.filter((_, i) => !skippedActions.includes(i)) ?? [];
 
-  const devNextAction = useMemo(() => {
-    if (!useDevTimeline || !timeline) return null;
+  const nextActionForCard = useMemo(() => {
+    if (!timeline) return null;
     return getNextActionItem(timeline, completedActions, skippedActions);
-  }, [useDevTimeline, timeline, completedActions, skippedActions]);
-
-  const realNextAction = useMemo(() => {
-    if (useDevTimeline || !timeline) return null;
-    return getNextActionItem(timeline, completedActions, skippedActions);
-  }, [useDevTimeline, timeline, completedActions, skippedActions]);
-
-  const nextActionForCard = useDevTimeline ? devNextAction : realNextAction;
+  }, [timeline, completedActions, skippedActions]);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
