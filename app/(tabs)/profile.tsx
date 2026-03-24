@@ -83,6 +83,7 @@ export default function ProfileScreen() {
   } | null>(null);
   const [leaderboardPreview, setLeaderboardPreview] = useState<LeaderboardEntry[]>([]);
   const [leaderboardPreviewLoading, setLeaderboardPreviewLoading] = useState(true);
+  const [leaderboardPreviewError, setLeaderboardPreviewError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [accountDeleting, setAccountDeleting] = useState(false);
@@ -160,6 +161,7 @@ export default function ProfileScreen() {
       setLeaderboardPreviewLoading(false);
       return;
     }
+    setLeaderboardPreviewError(null);
     try {
       const res = await apiGet('/api/leaderboard?limit=3', session);
       if (res.ok) {
@@ -178,9 +180,11 @@ export default function ProfileScreen() {
           setLeaderboardPreview([]);
         }
       } else {
+        setLeaderboardPreviewError('Failed to load');
         setLeaderboardPreview([]);
       }
-    } catch {
+    } catch (e) {
+      setLeaderboardPreviewError(e instanceof Error ? e.message : 'Failed to load');
       setLeaderboardPreview([]);
     } finally {
       setLeaderboardPreviewLoading(false);
@@ -452,7 +456,6 @@ export default function ProfileScreen() {
         });
         return;
       }
-      Alert.alert('Coming soon', `${label} – not implemented yet.`);
     },
     [handleDeleteAccount, iapRestoring, session, user]
   );
@@ -583,6 +586,10 @@ export default function ProfileScreen() {
           <View style={styles.settingsRowDivider} />
           {leaderboardPreviewLoading ? (
             <ActivityIndicator size="small" color={glassColors.primary} style={styles.leaderboardLoader} />
+          ) : leaderboardPreviewError ? (
+            <Text style={styles.leaderboardEmptyText}>
+              {leaderboardPreviewError} – tap "See all" to retry
+            </Text>
           ) : (
             <>
               {leaderboardPreview.length === 0 ? (

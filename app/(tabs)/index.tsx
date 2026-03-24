@@ -283,6 +283,10 @@ export default function HomeScreen() {
   const handleAffirmForTimeline = useCallback(
     async (timelineId: string, affirmationIndexVal: number, affirmationTextVal: string) => {
       if (!session) return;
+      if (timelineId === 'temp_unsaved') {
+        // Cannot affirm an unsaved timeline - silently skip
+        return;
+      }
       setAffirmLoadingId(timelineId);
       try {
         const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -683,22 +687,6 @@ export default function HomeScreen() {
             affirmLoading={affirmLoadingId === todayAffirmations[0].timelineId}
             onShare={() => {}}
           />
-        ) : todayAffirmations?.length === 0 ? (
-          <GlassCard>
-            <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>
-            <Text style={styles.noAffirmationBody}>
-              Generate a timeline on the Generate tab to unlock personalized
-              daily affirmations.
-            </Text>
-            <View style={styles.noAffirmationActions}>
-              <GlassButton
-                title="Go to Generate"
-                onPress={() => router.push('/generator')}
-                accessibilityLabel="Go to Generate tab"
-                accessibilityHint="Opens the Generate tab to create a timeline"
-              />
-            </View>
-          </GlassCard>
         ) : (
           <GlassCard>
             <Text style={styles.noAffirmationTitle}>No daily affirmation yet</Text>

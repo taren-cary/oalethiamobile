@@ -95,6 +95,7 @@ export default function LeaderboardScreen() {
 
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLeaderboard = useCallback(async () => {
     if (!session) {
@@ -102,6 +103,7 @@ export default function LeaderboardScreen() {
       return;
     }
     setLoading(true);
+    setError(null);
     try {
       const res = await apiGet('/api/leaderboard?limit=25', session);
       if (res.ok) {
@@ -120,9 +122,11 @@ export default function LeaderboardScreen() {
           setLeaderboard([]);
         }
       } else {
+        setError('Failed to load leaderboard');
         setLeaderboard([]);
       }
-    } catch {
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load leaderboard');
       setLeaderboard([]);
     } finally {
       setLoading(false);
@@ -156,6 +160,36 @@ export default function LeaderboardScreen() {
         <View style={[styles.centered, { paddingTop, paddingBottom }]}>
           <ActivityIndicator size="large" color={glassColors.primary} />
           <Text style={styles.loadingText}>Loading leaderboard…</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'Leaderboard',
+            headerBackTitle: 'Profile',
+            headerStyle: { backgroundColor: '#0a0a0f' },
+            headerTintColor: '#ffffff',
+            headerShadowVisible: false,
+          }}
+        />
+        <Image
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
+          style={styles.backgroundImage}
+          contentFit="cover"
+        />
+        <View style={[styles.centered, { paddingTop, paddingBottom }]}>
+          <EmptyState
+            icon="alert-circle-outline"
+            title="Could not load leaderboard"
+            description={error}
+            actionLabel="Tap to retry"
+            onAction={fetchLeaderboard}
+          />
         </View>
       </View>
     );

@@ -78,11 +78,11 @@
 - Block the "Done" button (or show an error) unless a suggestion has been selected, so coordinates are always valid.
 
 ### 10. Profile Screen — "Coming soon" Alert for Unimplemented Settings Rows
-- [ ] **File:** `app/(tabs)/profile.tsx` line 455 — any settings label not explicitly handled falls through to `Alert.alert('Coming soon', ...)`.
+- [x] **File:** `app/(tabs)/profile.tsx` line 455 — any settings label not explicitly handled falls through to `Alert.alert('Coming soon', ...)`.
 - Identify which label(s) still hit this fallback and either implement them or remove them from the UI before TestFlight submission (App Store guideline 2.1 — no placeholder/incomplete features).
 
 ### 11. Duplicate "No daily affirmation yet" Branch
-- [ ] **File:** `app/(tabs)/index.tsx` lines 686–712 — the condition `todayAffirmations?.length === 0` and the final `else` branch (line 703+) both render the same "No daily affirmation yet" card.
+- [x] **File:** `app/(tabs)/index.tsx` lines 686–712 — the condition `todayAffirmations?.length === 0` and the final `else` branch (line 703+) both render the same "No daily affirmation yet" card.
 - The second branch (`else`) is dead code; the `null`/undefined case for `todayAffirmations` after it has been loaded should be handled gracefully, not silently repeat the empty state.
 - Consolidate into a single empty-state branch.
 
@@ -91,18 +91,18 @@
 ## 🟡 Medium Priority — Correctness and Polish
 
 ### 12. `handleAffirm` Called with `'temp_unsaved'` Timeline ID
-- [ ] **File:** `app/(tabs)/index.tsx` — anywhere `handleAffirmForTimeline` is called on an affirmation whose `timelineId` is `'temp_unsaved'` will POST to the API with an invalid ID.
+- [x] **File:** `app/(tabs)/index.tsx` — anywhere `handleAffirmForTimeline` is called on an affirmation whose `timelineId` is `'temp_unsaved'` will POST to the API with an invalid ID.
 - Guard the affirm API call: if `timelineId === 'temp_unsaved'`, skip the API call or surface a "Please save your timeline first" prompt.
 
 ### 13. `WelcomeModalContent` Is a Dead Code Path
 - [x] **Not applicable for live test.** Confirmed reachable only via "Add birth data" buttons on home/generator screens — a broken-data safety net. Intentionally kept as an escape hatch. Coordinate fix deferred to a future update (see item 8).
 
 ### 14. `SubscriptionContext` Does Not Surface Loading Errors to UI
-- [ ] **File:** `contexts/SubscriptionContext.tsx` — `refreshSubscription` and `refreshCredits` swallow network errors silently (`catch { // Keep previous state }`).
+- [x] **File:** `contexts/SubscriptionContext.tsx` — `refreshSubscription` and `refreshCredits` swallow network errors silently (`catch { // Keep previous state }`).
 - While keeping previous state is fine, the `generator.tsx` and `profile.tsx` screens have no way to know a refresh failed. Add an optional `error` field to `SubscriptionContextType` so screens can show a retry prompt if credits fail to load.
 
 ### 15. Leaderboard and Profile Preview Show Empty List on API Failure
-- [ ] **Files:** `app/leaderboard.tsx` and `app/(tabs)/profile.tsx` — on API error, both set the leaderboard to `[]`, which renders the empty state with no indication of a network problem.
+- [x] **Files:** `app/leaderboard.tsx` and `app/(tabs)/profile.tsx` — on API error, both set the leaderboard to `[]`, which renders the empty state with no indication of a network problem.
 - Add an `error` state and show a "Could not load leaderboard – tap to retry" message instead of a blank list.
 
 ### 16. `iap-verify-receipt` Edge Function — `APPLE_SHARED_SECRET` Is Blank

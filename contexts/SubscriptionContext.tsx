@@ -29,6 +29,7 @@ export interface SubscriptionContextType {
   isFree: boolean;
   status: string;
   loading: boolean;
+  error: string | null;
   refreshSubscription: () => Promise<void>;
   refreshCredits: () => Promise<void>;
 }
@@ -56,6 +57,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   const [isFree, setIsFree] = useState(true);
   const [status, setStatus] = useState('active');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Prevent double-fetching on rapid session changes.
   const fetchingRef = useRef(false);
@@ -79,8 +81,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         setIsFree(data.isFree ?? true);
         setStatus(data.status ?? 'active');
       }
-    } catch {
-      // Keep previous state on network error.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load subscription');
     }
   }, [session]);
 
@@ -92,8 +94,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
         const data = await res.json();
         setCredits(data.credits ?? 0);
       }
-    } catch {
-      // Keep previous state on network error.
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load credits');
     }
   }, [session]);
 
@@ -102,6 +104,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     if (!session || fetchingRef.current) return;
     fetchingRef.current = true;
     setLoading(true);
+    setError(null);
     try {
       await Promise.all([refreshSubscription(), refreshCredits()]);
     } finally {
@@ -163,6 +166,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     isFree,
     status,
     loading,
+    error,
     refreshSubscription,
     refreshCredits,
   };
