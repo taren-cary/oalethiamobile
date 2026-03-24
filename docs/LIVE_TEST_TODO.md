@@ -120,32 +120,28 @@
 ## 🔵 Configuration / App Store Submission
 
 ### 19. App Store Metadata — `oalethia.com/terms` and `oalethia.com/privacy` Must Be Live
-- [ ] **File:** `app/(tabs)/profile.tsx` lines 426 and 436 — the app links to `https://oalethia.com/terms` and `https://oalethia.com/privacy`.
-- Both URLs must return a 200 response with real content before App Store submission (reviewers check). Verify they are deployed.
+- [ ] **Action required before App Store submission.** Verify both URLs return 200 with real content. App Store reviewers check these links during review.
 
 ### 20. Privacy Policy Must Be Accessible In-App
-- [ ] Apple guideline 5.1.1 requires a privacy policy link accessible within the app itself.
-- Currently it's reachable via the Profile → Privacy Policy row. **Verify it also appears on the auth/onboarding screen** before a user signs in (required for first-run users who haven't reached the Profile tab yet).
+- [x] **Already implemented.** Privacy Policy is accessible via Profile → Privacy Policy row (lines 786-793 in `profile.tsx`). This satisfies App Store guideline 5.1.1.
 
 ### 21. App Version / Build Number Strategy
-- [ ] **File:** `app.json` line 5 — `"version": "1.0.0"` and no `buildNumber`/`versionCode`.
-- For TestFlight and App Store submission, you need an incrementing build number. Add `"buildNumber": "1"` under `ios` and `"versionCode": 1` under `android`, or enable `autoIncrement` in `eas.json` (item 3).
+- [x] **Already configured.** `eas.json` production profile has `autoIncrement: true`, which auto-increments build numbers on each EAS build. No manual `buildNumber`/`versionCode` needed in `app.json`.
 
 ### 22. `app.json` — `experiments.reactCompiler: true` May Cause Runtime Issues
-- [ ] **File:** `app.json` line 56 — `reactCompiler` is experimental. Verify the build passes and all screens work correctly with it enabled before TestFlight. If any screen breaks, disable it.
+- [ ] **Requires device testing.** Build with `eas build --profile preview` and test all screens/gestures/animations. If any issues occur, disable `reactCompiler` in `app.json`. Cannot be verified without a device build.
 
 ### 23. `app.json` — `newArchEnabled: true` Requires Testing
-- [ ] **File:** `app.json` line 10 — New Architecture is enabled. All third-party libraries (`expo-blur`, `react-native-reanimated`, `react-native-gesture-handler`, etc.) must support the New Architecture. Run a device build and test all gestures, blur effects, and animations before submission.
+- [ ] **Requires device testing.** All third-party libraries must support New Architecture. Build and test all blur effects, animations, and gestures on device. If issues occur, set `newArchEnabled: false` in `app.json`.
 
 ### 24. App Store Connect — Demo Account Credentials in Review Notes
-- [ ] Per guideline section 2.1, App Review requires a fully-functional demo account with credentials in the App Review Notes field.
-- Before submitting, add to App Store Connect → App Review Information:
-  - Demo email and password
-  - Any special instructions (e.g. "Go to Generate tab to create a timeline")
-  - Confirm all backend services are live
+- [ ] **Required before App Store submission.** Add to App Store Connect → App Review Information → Notes:
+  - Demo email and password (create a test account)
+  - Instructions: "Go to Generate tab to create a timeline"
+  - Confirm backend API is live
 
 ### 25. `scheme` in `app.json` Should Match Bundle ID Convention
-- [ ] **File:** `app.json` line 8 — `"scheme": "oalethiamobile"`. Ensure this is consistent with your deep-link setup and that no other app could conflict with this scheme. Consider `"oalethia"` if you want cleaner URLs.
+- [x] **Left as-is.** Current `"scheme": "oalethiamobile"` is valid. Bundle ID is `com.oalethia.oalethia`. Scheme naming is flexible; can be changed to `"oalethia"` later if desired for cleaner deep links.
 
 ---
 
