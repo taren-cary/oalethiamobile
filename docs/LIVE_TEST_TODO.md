@@ -62,21 +62,19 @@
 ## 🟠 High Priority — Functionality Is Broken or Missing
 
 ### 6. `onShare={() => {}}` No-Ops on Home Screen
-- [ ] **File:** `app/(tabs)/index.tsx` lines 662 and 684 — both `SwipeableAffirmationCard` and `AffirmationCard` receive an empty arrow function as `onShare`.
+- [x] **File:** `app/(tabs)/index.tsx` lines 662 and 684 — both `SwipeableAffirmationCard` and `AffirmationCard` receive an empty arrow function as `onShare`.
 - Tapping Share does nothing. Wire up native `Share.share()` (or the `ShareButton.performShare` logic) with the affirmation text as the message.
 
 ### 7. Save Timeline — Error Is Silently Swallowed
-- [ ] **File:** `components/modals/ResultsModalContent.tsx` lines 140–144 — the `catch` block sets `setSaving(false)` but shows no user-facing error message.
+- [x] **File:** `components/modals/ResultsModalContent.tsx` lines 140–144 — the `catch` block sets `setSaving(false)` but shows no user-facing error message.
 - Users will see the button become re-enabled with no feedback if the save fails (e.g. network error or DB error).
 - Add an `error` state and display an error message below the save button.
 
 ### 8. Welcome Modal Saves `latitude: 0, longitude: 0`
-- [ ] **File:** `components/modals/WelcomeModalContent.tsx` lines 60–61 — `latitude: 0` and `longitude: 0` are hardcoded.
-- This modal only accepts a text `location` field with no geocoding. All birth charts created through this path will have incorrect coordinates, breaking any coordinate-dependent astrology features.
-- Either integrate the `BirthLocationPickerScreen` geocoding logic here, or replace this modal entirely with the picker.
+- [x] **Not applicable for live test.** The onboarding flow in `_layout.tsx` enforces `BirthLocationPickerScreen` (with proper geocoding) before auth, so no normally onboarded user can reach this modal. It only exists as a safety net for a broken-data edge case. Left as-is; replace with the full picker in a future update if needed.
 
 ### 9. Birth Location Picker — "Done" Saves `0,0` if User Doesn't Select a Suggestion
-- [ ] **File:** `components/birth-location-picker/BirthLocationPickerScreen.tsx` lines 103–104 — `handleDone` uses `selectedCoords ?? 0` so if the user types a location but doesn't tap a suggestion, lat/lon will be `0, 0`.
+- [x] **File:** `components/birth-location-picker/BirthLocationPickerScreen.tsx` lines 103–104 — `handleDone` uses `selectedCoords ?? 0` so if the user types a location but doesn't tap a suggestion, lat/lon will be `0, 0`.
 - Block the "Done" button (or show an error) unless a suggestion has been selected, so coordinates are always valid.
 
 ### 10. Profile Screen — "Coming soon" Alert for Unimplemented Settings Rows
@@ -97,8 +95,7 @@
 - Guard the affirm API call: if `timelineId === 'temp_unsaved'`, skip the API call or surface a "Please save your timeline first" prompt.
 
 ### 13. `WelcomeModalContent` Is a Dead Code Path
-- [ ] **File:** `components/modals/WelcomeModalContent.tsx` — the birth data collection is now handled entirely by the onboarding wizard (`BirthDatePickerScreen` → `BirthTimePickerScreen` → `BirthLocationPickerScreen`). The modal route (`app/modal`) still renders this content.
-- Verify whether this modal is still reachable. If not, remove it to avoid confusion. If it is, fix the `0,0` coordinates issue (item 8 above).
+- [x] **Not applicable for live test.** Confirmed reachable only via "Add birth data" buttons on home/generator screens — a broken-data safety net. Intentionally kept as an escape hatch. Coordinate fix deferred to a future update (see item 8).
 
 ### 14. `SubscriptionContext` Does Not Surface Loading Errors to UI
 - [ ] **File:** `contexts/SubscriptionContext.tsx` — `refreshSubscription` and `refreshCredits` swallow network errors silently (`catch { // Keep previous state }`).

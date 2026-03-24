@@ -51,6 +51,7 @@ export function ResultsModalContent() {
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [affirmed, setAffirmed] = useState(false);
   const [affirmLoading, setAffirmLoading] = useState(false);
   const [completedActions, setCompletedActions] = useState<number[]>([]);
@@ -97,6 +98,7 @@ export function ResultsModalContent() {
   const handleSave = useCallback(async () => {
     if (!user || !result) return;
     setSaving(true);
+    setSaveError('');
     try {
       const lifeContext = normalizeLifeContext(result.life_context);
       const { data: savedTimeline, error } = await supabase
@@ -137,8 +139,8 @@ export function ResultsModalContent() {
       await supabase.from('daily_affirmations').insert(dailyAffirmations);
       setSaved(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      setSaving(false);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to save. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }
@@ -284,6 +286,11 @@ export function ResultsModalContent() {
           />
         ) : null}
 
+        {saveError ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{saveError}</Text>
+          </View>
+        ) : null}
         <GlassButton
           title={saving ? 'Saving…' : saved ? 'Saved!' : 'Save timeline'}
           onPress={handleSave}
@@ -365,5 +372,18 @@ const styles = StyleSheet.create({
   },
   button: {
     marginBottom: glassSpacing.md,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    padding: glassSpacing.sm,
+    marginBottom: glassSpacing.sm,
+  },
+  errorText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.error,
+    textAlign: 'center',
   },
 });

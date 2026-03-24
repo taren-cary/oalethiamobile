@@ -99,6 +99,10 @@ export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPicke
   }, []);
 
   const handleDone = useCallback(() => {
+    if (location.trim() && !selectedCoords) {
+      setError('Please select a location from the suggestions.');
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const lat = selectedCoords ? parseFloat(selectedCoords.lat) : 0;
     const lon = selectedCoords ? parseFloat(selectedCoords.lon) : 0;
@@ -213,6 +217,7 @@ export function BirthLocationPickerScreen({ onDone, onSkip }: BirthLocationPicke
             <GlassButton
               title="Done"
               onPress={handleDone}
+              disabled={location.trim().length > 0 && !selectedCoords}
               accessibilityLabel="Continue"
               style={styles.doneButton}
             />
