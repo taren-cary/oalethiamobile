@@ -53,7 +53,7 @@
   ```
 
 ### 5. No Notification Tap / Deep-Link Handler
-- [ ] **File:** `app/_layout.tsx` — there is no `Notifications.addNotificationResponseReceivedListener`.
+- [x] **File:** `app/_layout.tsx` — there is no `Notifications.addNotificationResponseReceivedListener`.
 - Tapping a scheduled reminder does nothing. Users who tap "Daily affirmation" or "Next action" notifications land on the home screen with no navigation to the relevant screen.
 - Add listener in `_layout.tsx` that routes to `/(tabs)/` (affirmation) or `timeline/[id]` (next action) based on notification data payload.
 

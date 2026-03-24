@@ -16,6 +16,7 @@ import {
   Teko_700Bold,
 } from '@expo-google-fonts/teko';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter } from 'expo-router';
@@ -121,6 +122,14 @@ function AppShell({ colorScheme }: AppShellProps) {
 
   const { user, isFirstTimeUser, loading } = useAuth();
   const router = useRouter();
+
+  // Navigate to home when user taps any notification (affirmation or next action reminders).
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(() => {
+      router.push('/(tabs)/');
+    });
+    return () => sub.remove();
+  }, [router]);
 
   // Load onboarding completion flag once per device.
   useEffect(() => {
