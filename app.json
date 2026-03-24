@@ -9,12 +9,14 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
+      "bundleIdentifier": "com.oalethia.oalethia",
       "supportsTablet": true,
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Oalethia sends gentle reminders for your daily affirmations and important timeline actions, so you can stay on track with your goals."
       }
     },
     "android": {
+      "package": "com.oalethia.oalethia",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -49,7 +51,15 @@
           "cameraPermission": "Allow Oalethia to use the camera to take a profile picture."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#6366f1",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
