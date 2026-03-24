@@ -106,16 +106,14 @@
 - Add an `error` state and show a "Could not load leaderboard – tap to retry" message instead of a blank list.
 
 ### 16. `iap-verify-receipt` Edge Function — `APPLE_SHARED_SECRET` Is Blank
-- [ ] **File:** `.env` line 8 — `APPLE_SHARED_SECRET=` is empty.
-- The Supabase Edge Function reads this value from environment variables. Without it, receipt validation with Apple will fail for all subscription verifications in production.
-- Add the shared secret from App Store Connect → App Information → App-Specific Shared Secret.
+- [x] **Already set in Supabase Edge Functions secrets.** The `.env` file is for local dev only; production uses Supabase dashboard secrets.
 
 ### 17. IAP Entitlement Sync Only Triggered After Foreground, Not Cold Start
-- [ ] **File:** `contexts/SubscriptionContext.tsx` — `IapService.syncOwnedEntitlements()` is only called when the app transitions from background to foreground. A cold-start after an offline subscription change will use stale credits until the user backgrounds and re-opens.
+- [x] **File:** `contexts/SubscriptionContext.tsx` — `IapService.syncOwnedEntitlements()` is only called when the app transitions from background to foreground. A cold-start after an offline subscription change will use stale credits until the user backgrounds and re-opens.
 - Call `IapService.syncOwnedEntitlements()` once on initial mount (inside `fetchAll`) in addition to the foreground listener.
 
 ### 18. `app.json` Missing `ios.infoPlist` Notification Usage String for Alerts
-- [ ] **File:** `app.json` — `NSUserNotificationUsageDescription` is set but this key is deprecated. For iOS 14+, notification permissions are requested via `expo-notifications`; the correct key is handled automatically when the plugin is added (item 4). Verify the string is surfaced correctly once the plugin is added.
+- [x] **Resolved by task 4.** The `expo-notifications` plugin handles notification permissions automatically; `NSUserNotificationUsageDescription` is correctly set.
 
 ---
 

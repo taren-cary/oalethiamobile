@@ -106,6 +106,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     setLoading(true);
     setError(null);
     try {
+      await IapService.syncOwnedEntitlements();
       await Promise.all([refreshSubscription(), refreshCredits()]);
     } finally {
       setLoading(false);
