@@ -58,8 +58,6 @@ export default function GeneratorScreen() {
   const paddingBottom = insets.bottom + 100;
   const costPerGeneration = 1;
 
-  const shouldGateBirthData = !!user && isFirstTimeUser;
-
   // Load first-time generator hints preference per user.
   useEffect(() => {
     if (!user) {
@@ -215,48 +213,6 @@ export default function GeneratorScreen() {
     showHints,
     dismissHintsForUser,
   ]);
-
-  if (shouldGateBirthData) {
-    return (
-      <View style={styles.container}>
-        <Image
-          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
-          style={styles.backgroundImage}
-          contentFit="cover"
-          transition={300}
-          accessible={false}
-        />
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop: insets.top + glassSpacing.md, paddingBottom },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.title}>StarManifest™ Generator</Text>
-          <GlassCard style={styles.formCard}>
-            <Text style={styles.promptLabel}>
-              Add your birth details to generate your first timeline.
-            </Text>
-            <Text style={styles.helperText}>
-              We use your birth date, time, and location to map your transits and
-              personalize your action plan. You only need to add this once.
-            </Text>
-            <GlassButton
-              title="Add birth data"
-              onPress={() =>
-                router.push({ pathname: '/modal', params: { type: 'welcome' } })
-              }
-              accessibilityLabel="Add birth data"
-              accessibilityHint="Opens a screen to enter your birth details"
-              style={styles.resultBtnPrimary}
-            />
-          </GlassCard>
-        </ScrollView>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>

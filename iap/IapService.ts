@@ -12,8 +12,6 @@ export interface IapPurchaseService {
 }
 
 import * as Haptics from 'expo-haptics';
-import * as InAppPurchases from 'expo-in-app-purchases';
-import { IAPResponseCode } from 'expo-in-app-purchases';
 import type { InAppPurchase } from 'expo-in-app-purchases';
 
 import { supabase } from '@/lib/supabase';
@@ -32,6 +30,24 @@ type ProductMeta = {
   consumeOnAndroid: boolean;
   creditsToAdd?: number;
 };
+
+type IapModule = typeof import('expo-in-app-purchases');
+
+let cachedIapModule: IapModule | null | undefined;
+
+function getIapModule(): IapModule | null {
+  if (cachedIapModule !== undefined) return cachedIapModule;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    cachedIapModule = require('expo-in-app-purchases') as IapModule;
+  } catch {
+    cachedIapModule = null;
+  }
+  return cachedIapModule;
+}
+
+const IAP_UNAVAILABLE_MESSAGE =
+  'In-app purchases are not available in this build (e.g. Expo Go). Use a development build or TestFlight to test purchases.';
 
 export const IAP_PRODUCTS = {
   subscriptionMonthly: {
@@ -84,6 +100,10 @@ function clearPending(productId: string) {
 }
 
 async function ensureInitialized() {
+  const mod = getIapModule();
+  if (!mod) return false;
+  const { InAppPurchases, IAPResponseCode } = mod;
+
   if (!isConnected) {
     await InAppPurchases.connectAsync();
     isConnected = true;
@@ -137,12 +157,17 @@ async function ensureInitialized() {
 
     isListenerRegistered = true;
   }
+
+  return true;
 }
 
 async function InAppPurchasesMaybeVerifyAndFinish(
   purchase: InAppPurchase,
   meta: ProductMeta,
 ) {
+  const mod = getIapModule();
+  if (!mod) return;
+
   const { transactionReceipt } = purchase;
   if (!transactionReceipt) return;
 
@@ -168,7 +193,7 @@ async function InAppPurchasesMaybeVerifyAndFinish(
   }
 
   if (!purchase.acknowledged) {
-    await InAppPurchases.finishTransactionAsync(purchase, meta.consumeOnAndroid);
+    await mod.InAppPurchases.finishTransactionAsync(purchase, meta.consumeOnAndroid);
   }
 
   // Notify app state and resolve any pending call.
@@ -215,7 +240,11 @@ async function reconcileNoActiveSubscription(): Promise<void> {
 }
 
 async function buyItem(productId: string): Promise<PurchaseResult> {
-  await ensureInitialized();
+  const initialized = await ensureInitialized();
+  if (!initialized) return { ok: false, errorMessage: IAP_UNAVAILABLE_MESSAGE };
+  const mod = getIapModule();
+  if (!mod) return { ok: false, errorMessage: IAP_UNAVAILABLE_MESSAGE };
+  const { InAppPurchases, IAPResponseCode } = mod;
 
   const meta = PRODUCT_META_BY_ID[productId];
   if (!meta) return { ok: false, errorMessage: 'Unknown product.' };
@@ -253,7 +282,11 @@ export const IapService: IapPurchaseService = {
     return buyItem(IAP_PRODUCTS.credits3Pack.id);
   },
   async restorePurchases() {
-    await ensureInitialized();
+    const initialized = await ensureInitialized();
+    if (!initialized) return { ok: false, errorMessage: IAP_UNAVAILABLE_MESSAGE };
+    const mod = getIapModule();
+    if (!mod) return { ok: false, errorMessage: IAP_UNAVAILABLE_MESSAGE };
+    const { InAppPurchases, IAPResponseCode } = mod;
 
     const { responseCode, results, errorCode } = await InAppPurchases.getPurchaseHistoryAsync({
       useGooglePlayCache: false,
@@ -296,7 +329,18 @@ export const IapService: IapPurchaseService = {
   },
 
   async syncOwnedEntitlements() {
-    await ensureInitialized();
+    const initialized = await ensureInitialized();
+    if (!initialized) {
+      await reconcileNoActiveSubscription();
+      return;
+    }
+
+    const mod = getIapModule();
+    if (!mod) {
+      await reconcileNoActiveSubscription();
+      return;
+    }
+    const { InAppPurchases, IAPResponseCode } = mod;
 
     const { responseCode, results } = await InAppPurchases.getPurchaseHistoryAsync({
       useGooglePlayCache: true,

@@ -113,7 +113,7 @@ export function WelcomeBadgeModalContent({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: glassColors.background.overlay,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: glassSpacing.screenPadding,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     maxWidth: 380,
     borderRadius: glassBorderRadius.xl,
     padding: glassSpacing.lg,
-    backgroundColor: glassColors.glass.medium,
+    backgroundColor: 'rgba(10, 10, 15, 0.92)',
     borderWidth: 1,
     borderColor: glassColors.glassBorder.active,
   },
