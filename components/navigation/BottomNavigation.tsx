@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { usePathname, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -57,6 +58,13 @@ export function BottomNavigation() {
       ]}
       pointerEvents="box-none"
     >
+      {/* Glassmorphism backdrop - same glass as circles but more transparent */}
+      <View style={styles.glassBackdrop}>
+        <BlurView intensity={20} tint="light" style={StyleSheet.absoluteFill} />
+        <View style={styles.glassOverlay} />
+      </View>
+
+      {/* Circular navigation buttons on top */}
       {TAB_ROUTES.map(({ route, segment, activeIcon, inactiveIcon, label }) => {
         const active = isActive(route, segment);
 
@@ -90,5 +98,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-evenly',
     alignItems: 'center',
     paddingHorizontal: 20,
+  },
+  glassBackdrop: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    overflow: 'hidden',
+  },
+  glassOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
 });
