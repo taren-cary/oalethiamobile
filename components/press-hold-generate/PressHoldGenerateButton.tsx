@@ -36,6 +36,16 @@ export function PressHoldGenerateButton({
     };
   }, []);
 
+  // Reset completed state when loading finishes (either success or failure)
+  useEffect(() => {
+    if (!loading && completed) {
+      const timer = setTimeout(() => {
+        reset();
+      }, 500); // Small delay to show the completed state briefly on success
+      return () => clearTimeout(timer);
+    }
+  }, [loading, completed]);
+
   const reset = () => {
     setCompleted(false);
     Animated.timing(progress, {

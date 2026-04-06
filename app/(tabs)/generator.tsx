@@ -5,6 +5,7 @@ import LottieView from 'lottie-react-native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -96,6 +97,42 @@ export default function GeneratorScreen() {
     }
     setShowHints(false);
   }, [user]);
+
+  const handleResetForm = useCallback(() => {
+    const hasContent = outcome.trim() || context.trim() || availableResources.trim();
+    
+    if (hasContent) {
+      Alert.alert(
+        'Reset form?',
+        'This will clear all your inputs. Are you sure?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Reset', 
+            style: 'destructive',
+            onPress: () => {
+              setOutcome('');
+              setContext('');
+              setAvailableResources('');
+              setApproach('balanced');
+              setTimeframe(3);
+              setFormError('');
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+          },
+        ]
+      );
+    } else {
+      // If empty, just reset without confirmation
+      setOutcome('');
+      setContext('');
+      setAvailableResources('');
+      setApproach('balanced');
+      setTimeframe(3);
+      setFormError('');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [outcome, context, availableResources]);
 
   // Load birth chart for signed-in user (same logic as CreateTimelineModalContent),
   // so we can call /api/generate-timeline without exposing birth fields on this screen.
@@ -407,6 +444,15 @@ export default function GeneratorScreen() {
             loading={loading}
           />
 
+          <Pressable
+            onPress={handleResetForm}
+            style={({ pressed }) => [styles.resetButton, pressed && { opacity: 0.6 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Reset form"
+          >
+            <Text style={styles.resetButtonText}>Reset form</Text>
+          </Pressable>
+
           {formError ? (
             <Text style={styles.errorText}>{formError}</Text>
           ) : null}
@@ -570,5 +616,16 @@ const styles = StyleSheet.create({
   hintsDismissText: {
     ...glassTypography.bodySmall,
     color: glassColors.accent,
+  },
+  resetButton: {
+    alignSelf: 'center',
+    paddingVertical: glassSpacing.sm,
+    paddingHorizontal: glassSpacing.md,
+    marginTop: glassSpacing.sm,
+  },
+  resetButtonText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    textDecorationLine: 'underline',
   },
 });
