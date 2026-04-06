@@ -918,6 +918,7 @@ const styles = StyleSheet.create({
     ...glassTypography.h2,
     color: glassColors.text.primary,
     marginBottom: glassSpacing.sm,
+    textAlign: 'center',
   },
   headerBlock: {
     alignItems: 'center',

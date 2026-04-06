@@ -783,6 +783,7 @@ const styles = StyleSheet.create({
     ...glassTypography.h2,
     color: glassColors.text.primary,
     marginBottom: 4,
+    textAlign: 'center',
   },
   brandSubtitle: {
     ...glassTypography.body,
