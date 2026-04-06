@@ -221,14 +221,29 @@ export default function ProfileScreen() {
       return;
     }
     try {
-      const { data } = await supabase
+      console.log('🔍 Fetching avatar URL for user:', user.id);
+      const { data, error } = await supabase
         .from('user_profiles')
         .select('avatar_url, username')
         .eq('user_id', user.id)
         .maybeSingle();
+      
+      if (error) {
+        console.error('❌ Error fetching avatar:', error);
+        throw error;
+      }
+      
+      console.log('✅ Fetched profile data:', data);
       setAvatarUrl(data?.avatar_url ?? null);
       setUsername(data?.username ?? null);
-    } catch {
+      
+      if (data?.avatar_url) {
+        console.log('🖼️ Avatar URL loaded:', data.avatar_url);
+      } else {
+        console.log('ℹ️ No avatar URL found for user');
+      }
+    } catch (e) {
+      console.error('❌ Failed to fetch avatar:', e);
       setAvatarUrl(null);
       setUsername(null);
     }
@@ -273,20 +288,43 @@ export default function ProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const path = `${user.id}/avatar.jpg`;
+      console.log('📸 Starting avatar upload for path:', path);
+      
       const response = await fetch(uri);
       const blob = await response.blob();
-      const { error: uploadError } = await supabase.storage
+      console.log('📦 Blob created, size:', blob.size, 'type:', blob.type);
+      
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
-      if (uploadError) throw uploadError;
+      
+      if (uploadError) {
+        console.error('❌ Upload error:', uploadError);
+        throw uploadError;
+      }
+      console.log('✅ Upload successful:', uploadData);
+      
       const publicUrl = `${supabaseUrl}/storage/v1/object/public/avatars/${path}`;
+      console.log('🔗 Public URL:', publicUrl);
+      
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
         .eq('user_id', user.id);
-      if (updateError) throw updateError;
-      setAvatarUrl(`${publicUrl}${publicUrl.includes('?') ? '&' : '?'}t=${Date.now()}`);
+      
+      if (updateError) {
+        console.error('❌ Database update error:', updateError);
+        throw updateError;
+      }
+      console.log('✅ Database updated successfully');
+      
+      const urlWithTimestamp = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+      console.log('🖼️ Setting avatar URL with cache bust:', urlWithTimestamp);
+      setAvatarUrl(urlWithTimestamp);
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
+      console.error('❌ Avatar upload failed:', e);
       Alert.alert(
         'Upload failed',
         e instanceof Error ? e.message : 'Could not set profile picture. Try again.'
@@ -496,6 +534,7 @@ export default function ProfileScreen() {
           >
             {avatarUrl ? (
               <Image
+                key={avatarUrl}
                 source={{ uri: avatarUrl }}
                 style={styles.avatarImage}
                 contentFit="cover"
