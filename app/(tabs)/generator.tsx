@@ -298,20 +298,28 @@ export default function GeneratorScreen() {
             value={outcome}
             onChangeText={setOutcome}
             placeholder="e.g., Get promoted, Find a partner, Hit $10k/month"
+            maxLength={150}
             accessibilityLabel="Outcome or goal"
             containerStyle={styles.inputTight}
           />
+          <Text style={styles.characterCount}>
+            {outcome.length}/150 characters
+          </Text>
           <Text style={styles.promptLabel}>What's your current situation with this goal?</Text>
           <GlassTextInput
             value={context}
             onChangeText={setContext}
             placeholder="Be specific! e.g. I'm a freelance designer with 2 clients, making $3k/month..."
+            maxLength={600}
             multiline
             numberOfLines={3}
             inputStyle={{ minHeight: 80 }}
             accessibilityLabel="Context"
             containerStyle={styles.inputTight}
           />
+          <Text style={styles.characterCount}>
+            {context.length}/600 characters
+          </Text>
           <Text style={styles.helperText}>
             💡 The more specific you are, the more personalized your action plan will be.
           </Text>
@@ -320,9 +328,13 @@ export default function GeneratorScreen() {
             value={availableResources}
             onChangeText={setAvailableResources}
             placeholder="e.g., 3–4 hours/day, budget $200–300, small network of ~20 contacts"
+            maxLength={300}
             accessibilityLabel="Available resources"
             containerStyle={styles.inputTight}
           />
+          <Text style={styles.characterCount}>
+            {availableResources.length}/300 characters
+          </Text>
           <Text style={styles.helperText}>
             💡 Include time, budget, network, skills, or any other resources you can use.
           </Text>
@@ -451,6 +463,13 @@ const styles = StyleSheet.create({
     ...glassTypography.bodySmall,
     color: glassColors.text.secondary,
     marginTop: 0,
+    marginBottom: glassSpacing.xs,
+  },
+  characterCount: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    textAlign: 'right',
+    marginTop: 4,
     marginBottom: glassSpacing.xs,
   },
   errorText: {
