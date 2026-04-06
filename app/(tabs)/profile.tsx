@@ -85,6 +85,7 @@ export default function ProfileScreen() {
   const [leaderboardPreviewLoading, setLeaderboardPreviewLoading] = useState(true);
   const [leaderboardPreviewError, setLeaderboardPreviewError] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [accountDeleting, setAccountDeleting] = useState(false);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences | null>(
@@ -216,17 +217,20 @@ export default function ProfileScreen() {
   const fetchAvatarUrl = useCallback(async () => {
     if (!user) {
       setAvatarUrl(null);
+      setUsername(null);
       return;
     }
     try {
       const { data } = await supabase
         .from('user_profiles')
-        .select('avatar_url')
+        .select('avatar_url, username')
         .eq('user_id', user.id)
         .maybeSingle();
       setAvatarUrl(data?.avatar_url ?? null);
+      setUsername(data?.username ?? null);
     } catch {
       setAvatarUrl(null);
+      setUsername(null);
     }
   }, [user]);
 
@@ -325,8 +329,8 @@ export default function ProfileScreen() {
     );
   }
 
-  const displayEmail = user?.email ?? 'Signed in';
-  const displayInitial = displayEmail.charAt(0).toUpperCase();
+  const displayName = username || user?.email || 'Signed in';
+  const displayInitial = displayName.charAt(0).toUpperCase();
 
   const handleDeleteAccount = useCallback(() => {
     if (!user || !session || accountDeleting) {
@@ -507,7 +511,7 @@ export default function ProfileScreen() {
           </Pressable>
           <Text style={styles.headerGreeting}>Welcome back</Text>
           <Text style={styles.headerUsername} numberOfLines={1}>
-            {displayEmail}
+            {displayName}
           </Text>
         </View>
 
