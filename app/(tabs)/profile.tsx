@@ -173,6 +173,7 @@ export default function ProfileScreen() {
             rank: index + 1,
             userId: entry.userId ?? entry.user_id ?? `user-${index}`,
             username: entry.username ?? `user_${String(entry.userId ?? entry.user_id ?? index).slice(0, 8)}`,
+            avatarUrl: entry.avatarUrl ?? entry.avatar_url ?? null,
             lifetimePoints: entry.lifetimePoints ?? entry.lifetime_points ?? 0,
             level: entry.level ?? 1,
             levelName: entry.levelName ?? LEVEL_NAMES[entry.level ?? 1] ?? 'Unknown',
@@ -551,7 +552,12 @@ export default function ProfileScreen() {
                 contentFit="cover"
               />
             ) : (
-              <Text style={styles.avatarLargeInitial}>{displayInitial}</Text>
+              <Ionicons name="person-outline" size={48} color={glassColors.text.secondary} />
+            )}
+            {!avatarUrl && !avatarUploading && (
+              <View style={styles.avatarBadge}>
+                <Ionicons name="add" size={16} color={glassColors.text.primary} />
+              </View>
             )}
             {avatarUploading && (
               <View style={styles.avatarUploadOverlay}>
@@ -656,9 +662,31 @@ export default function ProfileScreen() {
                     <Text style={styles.leaderboardRank}>
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
                     </Text>
-                    <Text style={styles.leaderboardUsername} numberOfLines={1}>
-                      {entry.username}
-                    </Text>
+                    <View style={styles.leaderboardAvatarWrap}>
+                      {entry.avatarUrl ? (
+                        <Image
+                          source={{ uri: entry.avatarUrl }}
+                          style={styles.leaderboardAvatarImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={styles.leaderboardAvatarPlaceholderInner}>
+                          <Ionicons name="person-outline" size={16} color={glassColors.text.secondary} />
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.leaderboardUsernameBlock}>
+                      <Text style={styles.leaderboardUsername} numberOfLines={1}>
+                        {entry.username}
+                      </Text>
+                      <View style={styles.leaderboardBadgeMini}>
+                        <Image
+                          source={getLevelBadgeSource(entry.level)}
+                          style={styles.leaderboardBadgeMiniImage}
+                          contentFit="contain"
+                        />
+                      </View>
+                    </View>
                     <Text style={styles.leaderboardPts}>
                       {entry.lifetimePoints.toLocaleString()} pts
                     </Text>
@@ -959,6 +987,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  avatarBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: glassColors.primary,
+    borderWidth: 2,
+    borderColor: glassColors.background.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatarLargeInitial: {
     ...glassTypography.h3,
     color: glassColors.text.primary,
@@ -1077,11 +1118,45 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
   },
-  leaderboardUsername: {
+  leaderboardAvatarWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: glassColors.glass.medium,
+  },
+  leaderboardAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  leaderboardAvatarPlaceholderInner: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  leaderboardUsernameBlock: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
+  },
+  leaderboardUsername: {
     ...glassTypography.label,
     color: glassColors.text.primary,
-    minWidth: 0,
+  },
+  leaderboardBadgeMini: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  leaderboardBadgeMiniImage: {
+    width: '100%',
+    height: '100%',
   },
   leaderboardPts: {
     ...glassTypography.labelSmall,

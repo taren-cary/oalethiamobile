@@ -2,6 +2,7 @@ export interface LeaderboardEntry {
   rank: number;
   userId: string;
   username: string;
+  avatarUrl?: string | null;
   lifetimePoints: number;
   level: number;
   levelName: string;

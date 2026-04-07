@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/empty-state';
 import { GlassCard } from '@/components/glass';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiGet } from '@/lib/api';
 import {
@@ -62,17 +63,32 @@ function LeaderboardRow({
       <Text style={[styles.rank, isTopThree && styles.rankTopThree]} numberOfLines={1}>
         {rankLabel}
       </Text>
-      <View style={[styles.badgeWrap, isTopThree && styles.badgeWrapTopThree]}>
-        <Image
-          source={getLevelBadgeSource(entry.level)}
-          style={styles.badgeImage}
-          contentFit="contain"
-        />
+      <View style={[styles.avatarWrap, isTopThree && styles.avatarWrapTopThree]}>
+        {entry.avatarUrl ? (
+          <Image
+            source={{ uri: entry.avatarUrl }}
+            style={styles.avatarImage}
+            contentFit="cover"
+          />
+        ) : (
+          <View style={styles.avatarPlaceholder}>
+            <Ionicons name="person-outline" size={isTopThree ? 22 : 20} color={glassColors.text.secondary} />
+          </View>
+        )}
       </View>
       <View style={styles.userBlock}>
-        <Text style={[styles.username, isTopThree && styles.usernameTopThree]} numberOfLines={1}>
-          {entry.username}
-        </Text>
+        <View style={styles.usernameRow}>
+          <Text style={[styles.username, isTopThree && styles.usernameTopThree]} numberOfLines={1}>
+            {entry.username}
+          </Text>
+          <View style={[styles.badgeMini, isTopThree && styles.badgeMiniTopThree]}>
+            <Image
+              source={getLevelBadgeSource(entry.level)}
+              style={styles.badgeMiniImage}
+              contentFit="contain"
+            />
+          </View>
+        </View>
         <Text style={[styles.levelLine, isTopThree && styles.levelLineTopThree]} numberOfLines={1}>
           Level {entry.level}: {entry.levelName}
         </Text>
@@ -108,11 +124,13 @@ export default function LeaderboardScreen() {
       const res = await apiGet('/api/leaderboard?limit=25', session);
       if (res.ok) {
         const data = await res.json();
+        console.log('🔍 Leaderboard API response:', data);
         if (Array.isArray(data) && data.length > 0) {
           const formatted: LeaderboardEntry[] = data.slice(0, 25).map((entry: any, index: number) => ({
             rank: index + 1,
             userId: entry.userId ?? entry.user_id ?? `user-${index}`,
             username: entry.username ?? `user_${String(entry.userId ?? entry.user_id ?? index).slice(0, 8)}`,
+            avatarUrl: entry.avatarUrl ?? entry.avatar_url ?? null,
             lifetimePoints: entry.lifetimePoints ?? entry.lifetime_points ?? 0,
             level: entry.level ?? 1,
             levelName: entry.levelName ?? LEVEL_NAMES[entry.level ?? 1] ?? 'Unknown',
@@ -318,26 +336,39 @@ const styles = StyleSheet.create({
   rankTopThree: {
     color: '#fde047',
   },
-  badgeWrap: {
+  avatarWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: glassColors.glass.medium,
+    position: 'relative',
   },
-  badgeWrapTopThree: {
+  avatarWrapTopThree: {
     width: 44,
     height: 44,
     borderRadius: 22,
   },
-  badgeImage: {
+  avatarImage: {
     width: '100%',
     height: '100%',
+  },
+  avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   userBlock: {
     flex: 1,
     minWidth: 0,
+  },
+  usernameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   username: {
     ...glassTypography.label,
@@ -345,6 +376,21 @@ const styles = StyleSheet.create({
   },
   usernameTopThree: {
     color: '#fef08a',
+  },
+  badgeMini: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  badgeMiniTopThree: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+  badgeMiniImage: {
+    width: '100%',
+    height: '100%',
   },
   levelLine: {
     ...glassTypography.bodySmall,
