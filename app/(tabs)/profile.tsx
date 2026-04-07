@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
+import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -290,13 +291,23 @@ export default function ProfileScreen() {
       const path = `${user.id}/avatar.jpg`;
       console.log('📸 Starting avatar upload for path:', path);
       
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      console.log('📦 Blob created, size:', blob.size, 'type:', blob.type);
+      // Read file as base64
+      const base64 = await FileSystem.readAsStringAsync(uri, {
+        encoding: 'base64',
+      });
+      console.log('📦 Base64 string created, length:', base64.length);
+      
+      // Convert base64 to array buffer for upload
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      console.log('📦 Byte array created, size:', bytes.length);
       
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
-        .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+        .upload(path, bytes.buffer, { upsert: true, contentType: 'image/jpeg' });
       
       if (uploadError) {
         console.error('❌ Upload error:', uploadError);
