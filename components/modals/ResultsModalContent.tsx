@@ -19,6 +19,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGenerationResult } from '@/contexts/GenerationResultContext';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import {
   DEFAULT_IMAGE_COUNT_PER_CONTEXT,
   normalizeLifeContext,
@@ -48,6 +49,7 @@ export function ResultsModalContent() {
   const { result, clearResult } = useGenerationResult();
   const { setLevelUp } = useLevelUp();
   const { invalidate } = usePointsRefresh();
+  const { tier, isFree } = useSubscription();
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -240,7 +242,7 @@ export function ResultsModalContent() {
           </View>
         )}
 
-        {result.actions.slice(0, 5).map((action, index) => {
+        {!isFree && result.actions.slice(0, 5).map((action, index) => {
           if (skippedActions.includes(index)) return null;
           // Skip rendering the next action again in the list.
           if (nextAction && index === nextActionOriginalIndex) return null;
@@ -270,7 +272,7 @@ export function ResultsModalContent() {
             </View>
           );
         })}
-        {result.actions.length > 5 && (
+        {!isFree && result.actions.length > 5 && (
           <Text style={styles.moreText}>+{result.actions.length - 5} more actions when saved</Text>
         )}
 

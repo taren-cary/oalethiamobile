@@ -16,10 +16,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressHoldGenerateButton } from '@/components/press-hold-generate/PressHoldGenerateButton';
 import { GlassButton, GlassCard, GlassTextInput } from '@/components/glass';
+import { AffirmationCard } from '@/components/affirmation-card';
+import { CountdownTimer } from '@/components/CountdownTimer';
+import { TimelineActionCard } from '@/components/timeline-action-card';
+import type { TimelineActionLink } from '@/components/timeline-action-card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGenerationResult } from '@/contexts/GenerationResultContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useLevelUp } from '@/contexts/LevelUpContext';
+import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiPost } from '@/lib/api';
+import { parseActionDate } from '@/lib/parseActionDate';
+import {
+  DEFAULT_IMAGE_COUNT_PER_CONTEXT,
+  normalizeLifeContext,
+} from '@/lib/affirmationLifeContexts';
 import { supabase } from '@/lib/supabase';
 import { glassBorderRadius, glassColors, glassSpacing, glassTypography } from '@/theme';
 import type { TimelineAction } from '@/types/timeline';
@@ -33,11 +44,25 @@ const APPROACHES: { value: Approach; label: string; desc: string }[] = [
   { value: 'aggressive', label: 'Aggressive', desc: 'Bold, high-impact actions' },
 ];
 
+function mapActionToLinks(action: TimelineAction): TimelineActionLink[] {
+  const links: TimelineActionLink[] = [];
+  action.articles?.forEach((a) => links.push({ title: a.title, url: a.url }));
+  return links;
+}
+
+function mapStrategy(action: TimelineAction): string | undefined {
+  if (action.strategy) return action.strategy;
+  if (action.strategies?.length) return action.strategies.join('\n\n');
+  return undefined;
+}
+
 export default function GeneratorScreen() {
   const router = useRouter();
   const { user, session, isFirstTimeUser } = useAuth();
-  const { setResult } = useGenerationResult();
+  const { result, setResult, clearResult } = useGenerationResult();
   const { tier, credits, isFree } = useSubscription();
+  const { setLevelUp } = useLevelUp();
+  const { invalidate } = usePointsRefresh();
   const insets = useSafeAreaInsets();
   const [outcome, setOutcome] = useState('');
   const [context, setContext] = useState('');
@@ -46,6 +71,15 @@ export default function GeneratorScreen() {
   const [timeframe, setTimeframe] = useState(3);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  
+  // Results display state
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [affirmed, setAffirmed] = useState(false);
+  const [affirmLoading, setAffirmLoading] = useState(false);
+  const [completedActions, setCompletedActions] = useState<number[]>([]);
+  const [skippedActions, setSkippedActions] = useState<number[]>([]);
 
   // Birth data loaded from profile; users don't edit it here.
   const [birthDate, setBirthDate] = useState('');
@@ -133,6 +167,108 @@ export default function GeneratorScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
   }, [outcome, context, availableResources]);
+
+  const handleAffirm = useCallback(async () => {
+    if (!session || !result || affirmLoading) return;
+    setAffirmLoading(true);
+    setAffirmed(true);
+    try {
+      const text = result.timelineAffirmations[0] ?? '';
+      const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const res = await apiPost('/api/affirm', session, {
+        generation_id: result.tempGenerationId,
+        affirmation_index: 0,
+        affirmation_text: text,
+        tz: timeZone,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.levelUp) {
+          setLevelUp({
+            newLevel: data.levelUp.newLevel,
+            levelName: data.levelUp.levelName,
+            previousLevel: data.levelUp.previousLevel,
+          });
+        }
+        invalidate();
+      }
+    } catch {
+      // keep affirmed locally
+    } finally {
+      setAffirmLoading(false);
+    }
+  }, [session, result, affirmLoading, setLevelUp, invalidate]);
+
+  const handleSaveTimeline = useCallback(async () => {
+    if (!user || !result) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      const lifeContext = normalizeLifeContext(result.life_context);
+      const { data: savedTimeline, error } = await supabase
+        .from('action_timeline_generations')
+        .insert({
+          user_id: user.id,
+          outcome: result.outcome,
+          context: result.context || '',
+          timeframe: result.timeframe,
+          actions: result.actions,
+          timeline_affirmations: result.timelineAffirmations,
+          summary: result.summary,
+          credits_used: 1,
+          life_context: lifeContext,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const today = new Date();
+      const imageCount = DEFAULT_IMAGE_COUNT_PER_CONTEXT;
+      const dailyAffirmations = result.timelineAffirmations.slice(0, 30).map((text, i) => {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        return {
+          user_id: user.id,
+          timeline_id: savedTimeline.id,
+          affirmation_index: i,
+          affirmation_text: text,
+          date: d.toISOString().split('T')[0],
+          affirmed: false,
+          points_awarded: 0,
+          image_index: i % imageCount,
+        };
+      });
+      await supabase.from('daily_affirmations').insert(dailyAffirmations);
+      setSaved(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : 'Failed to save. Please check your connection and try again.');
+    } finally {
+      setSaving(false);
+    }
+  }, [user, result]);
+
+  const handleGenerateAnother = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    clearResult();
+    setSaved(false);
+    setSaveError('');
+    setAffirmed(false);
+    setCompletedActions([]);
+    setSkippedActions([]);
+  }, [clearResult]);
+
+  const handleViewInLogs = useCallback(() => {
+    clearResult();
+    setSaved(false);
+    setSaveError('');
+    setAffirmed(false);
+    setCompletedActions([]);
+    setSkippedActions([]);
+    router.push('/(tabs)/logs');
+  }, [clearResult, router]);
 
   // Load birth chart for signed-in user (same logic as CreateTimelineModalContent),
   // so we can call /api/generate-timeline without exposing birth fields on this screen.
@@ -222,8 +358,7 @@ export default function GeneratorScreen() {
         tempGenerationId: data.tempGenerationId ?? '',
         life_context: data.life_context ?? undefined,
       });
-      // Overwrites any previous unsaved result; if user hadn't saved, it's lost, matching the desired behavior.
-      router.push({ pathname: '/modal', params: { type: 'results' } });
+      // Don't navigate to modal - show results inline
       if (showHints) {
         dismissHintsForUser();
       }
@@ -287,7 +422,9 @@ export default function GeneratorScreen() {
             </GlassCard>
           )}
 
-        {showHints && (
+        {!result && (
+          <>
+            {showHints && (
           <GlassCard style={styles.formCard}>
             <Text style={styles.promptLabel}>Quick walkthrough</Text>
             <Text style={styles.helperText}>
@@ -457,6 +594,8 @@ export default function GeneratorScreen() {
             <Text style={styles.errorText}>{formError}</Text>
           ) : null}
         </GlassCard>
+          </>
+        )}
 
         {loading && (
           <View style={styles.lottieContainer}>
@@ -468,6 +607,156 @@ export default function GeneratorScreen() {
               style={styles.lottie}
             />
           </View>
+        )}
+
+        {result && !loading && (
+          <>
+            <View style={styles.resultsHeader}>
+              <Text style={styles.resultsTitle}>Your timeline is ready</Text>
+            </View>
+
+            <View style={styles.outcomeBlock}>
+              <Text style={styles.outcomeLabel}>Goal</Text>
+              <Text style={styles.outcomeText}>{result.outcome}</Text>
+              <Text style={styles.aiNote}>This is AI generated content.</Text>
+            </View>
+
+            {(() => {
+              const todayFormatted = new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              });
+              const affirmationText = result.timelineAffirmations[0] ?? '';
+              const visibleActions = result.actions.filter(
+                (_, index) => !skippedActions.includes(index)
+              );
+              const nextActionIndex = visibleActions.findIndex(
+                (_, index) =>
+                  !completedActions.includes(result.actions.indexOf(visibleActions[index]))
+              );
+              const nextAction = nextActionIndex >= 0 ? visibleActions[nextActionIndex] : null;
+              const nextActionOriginalIndex = nextAction ? result.actions.indexOf(nextAction) : -1;
+              const nextActionTargetDate = nextAction ? parseActionDate(nextAction.date) : null;
+
+              return (
+                <>
+                  {saveError ? (
+                    <View style={styles.errorBox}>
+                      <Text style={styles.errorBoxText}>{saveError}</Text>
+                    </View>
+                  ) : null}
+                  
+                  <GlassButton
+                    title={saving ? 'Saving…' : saved ? 'Saved!' : 'Save timeline'}
+                    onPress={handleSaveTimeline}
+                    disabled={saving || saved}
+                    style={styles.saveButton}
+                    accessibilityLabel={saved ? 'Saved' : 'Save timeline'}
+                  />
+
+                  {nextAction && nextActionTargetDate && (
+                    <View style={styles.nextActionBlock}>
+                      <View style={styles.nextActionHeaderRow}>
+                        <Text style={styles.nextActionLabel}>Next action</Text>
+                        <CountdownTimer targetDate={nextActionTargetDate} compact />
+                      </View>
+                      <View style={styles.actionCardWrapper}>
+                        <TimelineActionCard
+                          date={nextAction.date}
+                          action={nextAction.action}
+                          transit={nextAction.transit}
+                          strategy={mapStrategy(nextAction)}
+                          links={
+                            mapActionToLinks(nextAction).length > 0
+                              ? mapActionToLinks(nextAction)
+                              : undefined
+                          }
+                          completed={completedActions.includes(nextActionOriginalIndex)}
+                          onToggleComplete={() => {
+                            const idx = nextActionOriginalIndex;
+                            const next = completedActions.includes(idx)
+                              ? completedActions.filter((i) => i !== idx)
+                              : [...completedActions, idx];
+                            setCompletedActions(next);
+                          }}
+                          onSkip={() =>
+                            setSkippedActions((s) => [...s, nextActionOriginalIndex])
+                          }
+                          staggerIndex={0}
+                          reduceMotion={false}
+                        />
+                      </View>
+                    </View>
+                  )}
+
+                  {!isFree && result.actions.slice(0, 5).map((action, index) => {
+                    if (skippedActions.includes(index)) return null;
+                    if (nextAction && index === nextActionOriginalIndex) return null;
+                    return (
+                      <View key={index} style={styles.actionCardWrapper}>
+                        <TimelineActionCard
+                          date={action.date}
+                          action={action.action}
+                          transit={action.transit}
+                          strategy={mapStrategy(action)}
+                          links={
+                            mapActionToLinks(action).length > 0
+                              ? mapActionToLinks(action)
+                              : undefined
+                          }
+                          completed={completedActions.includes(index)}
+                          onToggleComplete={() => {
+                            const next = completedActions.includes(index)
+                              ? completedActions.filter((i) => i !== index)
+                              : [...completedActions, index];
+                            setCompletedActions(next);
+                          }}
+                          onSkip={() => setSkippedActions((s) => [...s, index])}
+                          staggerIndex={index}
+                          reduceMotion={false}
+                        />
+                      </View>
+                    );
+                  })}
+                  {!isFree && result.actions.length > 5 && (
+                    <Text style={styles.moreText}>
+                      +{result.actions.length - 5} more actions when saved
+                    </Text>
+                  )}
+
+                  {affirmationText ? (
+                    <AffirmationCard
+                      text={affirmationText}
+                      date={todayFormatted}
+                      affirmed={affirmed}
+                      onAffirm={handleAffirm}
+                      onShare={() => {
+                        /* Poster image is captured and shared by AffirmationCard */
+                      }}
+                    />
+                  ) : null}
+
+                  {saved && (
+                    <GlassButton
+                      title="View in Logs"
+                      onPress={handleViewInLogs}
+                      style={styles.button}
+                      accessibilityLabel="View in Logs"
+                    />
+                  )}
+                  <GlassButton
+                    title="Generate another"
+                    onPress={handleGenerateAnother}
+                    variant="secondary"
+                    style={styles.button}
+                    accessibilityLabel="Generate another timeline"
+                  />
+                </>
+              );
+            })()}
+          </>
         )}
 
       </ScrollView>
@@ -628,5 +917,71 @@ const styles = StyleSheet.create({
     ...glassTypography.bodySmall,
     color: glassColors.text.tertiary,
     textDecorationLine: 'underline',
+  },
+  resultsHeader: {
+    marginBottom: glassSpacing.md,
+  },
+  resultsTitle: {
+    ...glassTypography.h4,
+    color: glassColors.text.primary,
+    textAlign: 'center',
+  },
+  outcomeBlock: {
+    marginBottom: glassSpacing.lg,
+  },
+  outcomeLabel: {
+    ...glassTypography.labelSmall,
+    color: glassColors.text.tertiary,
+    marginBottom: 4,
+  },
+  outcomeText: {
+    ...glassTypography.h4,
+    color: glassColors.text.primary,
+  },
+  aiNote: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginTop: 6,
+  },
+  saveButton: {
+    marginBottom: glassSpacing.lg,
+  },
+  nextActionBlock: {
+    marginBottom: glassSpacing.lg,
+  },
+  nextActionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: glassSpacing.sm,
+  },
+  nextActionLabel: {
+    ...glassTypography.labelSmall,
+    color: glassColors.accent,
+  },
+  actionCardWrapper: {
+    marginBottom: glassSpacing.md,
+  },
+  moreText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginBottom: glassSpacing.md,
+    textAlign: 'center',
+  },
+  button: {
+    marginBottom: glassSpacing.md,
+  },
+  errorBox: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    padding: glassSpacing.sm,
+    marginBottom: glassSpacing.md,
+  },
+  errorBoxText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.error,
+    textAlign: 'center',
   },
 });

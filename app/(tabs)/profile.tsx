@@ -547,7 +547,7 @@ export default function ProfileScreen() {
             {avatarUrl ? (
               <Image
                 key={avatarUrl}
-                source={{ uri: avatarUrl }}
+                source={{ uri: `${avatarUrl}?t=${Date.now()}` }}
                 style={styles.avatarImage}
                 contentFit="cover"
               />
@@ -665,7 +665,7 @@ export default function ProfileScreen() {
                     <View style={styles.leaderboardAvatarWrap}>
                       {entry.avatarUrl ? (
                         <Image
-                          source={{ uri: entry.avatarUrl }}
+                          source={{ uri: `${entry.avatarUrl}?t=${Date.now()}` }}
                           style={styles.leaderboardAvatarImage}
                           contentFit="cover"
                         />

@@ -49,14 +49,13 @@ const styles = StyleSheet.create({
   poster: {
     width: '100%',
     aspectRatio: 9 / 16,
-    borderRadius: 24,
     overflow: 'hidden',
   },
   posterOverlay: {
     flex: 1,
     paddingHorizontal: glassSpacing.lg,
     paddingTop: '45%',
-    paddingBottom: glassSpacing.sm,
+    paddingBottom: glassSpacing.xl,
     alignItems: 'center',
     justifyContent: 'space-between',
   },

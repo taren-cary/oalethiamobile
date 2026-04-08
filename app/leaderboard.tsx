@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack } from 'expo-router';
+import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -66,7 +66,7 @@ function LeaderboardRow({
       <View style={[styles.avatarWrap, isTopThree && styles.avatarWrapTopThree]}>
         {entry.avatarUrl ? (
           <Image
-            source={{ uri: entry.avatarUrl }}
+            source={{ uri: `${entry.avatarUrl}?t=${Date.now()}` }}
             style={styles.avatarImage}
             contentFit="cover"
           />
@@ -154,6 +154,12 @@ export default function LeaderboardScreen() {
   useEffect(() => {
     fetchLeaderboard();
   }, [fetchLeaderboard]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchLeaderboard();
+    }, [fetchLeaderboard])
+  );
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + glassSpacing.lg;

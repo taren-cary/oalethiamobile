@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     borderRadius: glassBorderRadius.xl,
     padding: glassSpacing.lg,
-    backgroundColor: glassColors.glass.medium,
+    backgroundColor: 'rgba(10, 10, 15, 0.92)',
     borderWidth: 1,
     borderColor: glassColors.glassBorder.active,
     alignItems: 'center',
