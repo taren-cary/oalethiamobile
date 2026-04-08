@@ -32,6 +32,7 @@ import { OnboardingScreen, getOnboardingStorageKey } from '@/components/onboardi
 import { BirthDatePickerScreen } from '@/components/birth-date-picker/BirthDatePickerScreen';
 import { BirthTimePickerScreen } from '@/components/birth-time-picker/BirthTimePickerScreen';
 import { BirthLocationPickerScreen } from '@/components/birth-location-picker/BirthLocationPickerScreen';
+import { CalculatingBirthChartScreen } from '@/components/calculating-birth-chart';
 import { AuthScreen } from '@/components/auth';
 import { AnimatedSplashScreen } from '@/components/splash';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -116,6 +117,7 @@ function AppShell({ colorScheme }: AppShellProps) {
   const [birthDateDone, setBirthDateDone] = useState(false);
   const [birthTimeDone, setBirthTimeDone] = useState(false);
   const [birthLocationDone, setBirthLocationDone] = useState(false);
+  const [calculatingDone, setCalculatingDone] = useState(false);
   const [authDone, setAuthDone] = useState(false);
   const [showWelcomeBadge, setShowWelcomeBadge] = useState(false);
   const hasCheckedWelcomeBadgeRef = useRef(false);
@@ -158,6 +160,7 @@ function AppShell({ colorScheme }: AppShellProps) {
       setBirthDateDone(true);
       setBirthTimeDone(true);
       setBirthLocationDone(true);
+      setCalculatingDone(true);
       setAuthDone(true);
     }
   }, [user, isFirstTimeUser, loading]);
@@ -182,6 +185,10 @@ function AppShell({ colorScheme }: AppShellProps) {
 
   const handleBirthLocationDone = useCallback(() => {
     setBirthLocationDone(true);
+  }, []);
+
+  const handleCalculatingDone = useCallback(() => {
+    setCalculatingDone(true);
   }, []);
 
   const handleAuthDone = useCallback(() => {
@@ -249,10 +256,13 @@ function AppShell({ colorScheme }: AppShellProps) {
       {onboardingComplete && birthDateDone && birthTimeDone && !birthLocationDone && (
         <BirthLocationPickerScreen onDone={handleBirthLocationDone} />
       )}
-      {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && !authDone && (
+      {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && !calculatingDone && (
+        <CalculatingBirthChartScreen onComplete={handleCalculatingDone} />
+      )}
+      {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && calculatingDone && !authDone && (
         <AuthScreen onDone={handleAuthDone} />
       )}
-      {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && authDone && (
+      {onboardingComplete && birthDateDone && birthTimeDone && birthLocationDone && calculatingDone && authDone && (
         <>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <PointsRefreshProvider>
