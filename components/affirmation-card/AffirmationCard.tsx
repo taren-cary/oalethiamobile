@@ -2,13 +2,18 @@ import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import React, { useCallback, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 
 import { GlassButton, GlassCard } from '@/components/glass';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
 
 const FALLBACK_POSTER = require('../../assets/affirmations/affirmation_test.jpg');
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// Account for screen padding (20px each side) + card padding (20px each side) = 80px total
+const POSTER_WIDTH = Math.floor(SCREEN_WIDTH - 80);
+const POSTER_HEIGHT = Math.floor(POSTER_WIDTH * (16 / 9));
 
 export interface AffirmationCardProps {
   text: string;
@@ -74,7 +79,12 @@ export function AffirmationCard({
       <Text style={styles.date}>{date}</Text>
       <ViewShot
         ref={posterShotRef}
-        options={{ format: 'jpg', quality: 1 }}
+        options={{
+          format: 'jpg',
+          quality: 1,
+          width: POSTER_WIDTH,
+          height: POSTER_HEIGHT,
+        }}
         style={styles.poster}
       >
         <Image
@@ -133,10 +143,12 @@ const styles = StyleSheet.create({
     marginBottom: glassSpacing.md,
   },
   poster: {
-    width: '100%',
-    aspectRatio: 9 / 16,
+    width: POSTER_WIDTH,
+    height: POSTER_HEIGHT,
+    backgroundColor: '#0a0a0f',
     overflow: 'hidden',
     marginBottom: glassSpacing.lg,
+    alignSelf: 'center',
   },
   posterOverlay: {
     flex: 1,
