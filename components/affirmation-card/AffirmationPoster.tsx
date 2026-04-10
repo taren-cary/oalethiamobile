@@ -20,7 +20,7 @@ export interface AffirmationPosterProps {
 export const AffirmationPoster = forwardRef<ViewShot, AffirmationPosterProps>(
   function AffirmationPoster({ text, imageUrl }, ref) {
     const posterSource = imageUrl?.trim()
-      ? { uri: imageUrl.trim() }
+      ? { uri: `${imageUrl.trim()}?t=${Date.now()}` }
       : FALLBACK_POSTER;
 
     return (

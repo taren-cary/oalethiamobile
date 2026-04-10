@@ -42,7 +42,7 @@ export function AffirmationCard({
   const [sharing, setSharing] = useState(false);
 
   const posterSource = imageUrl?.trim()
-    ? { uri: imageUrl.trim() }
+    ? { uri: `${imageUrl.trim()}?t=${Date.now()}` }
     : FALLBACK_POSTER;
   const handleAffirm = useCallback(() => {
     if (affirmed || affirmLoading) return;
