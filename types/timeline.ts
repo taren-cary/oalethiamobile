@@ -21,4 +21,6 @@ export interface SavedTimeline {
   created_at: string;
   /** One of 12 life-context slugs for affirmation image folder (e.g. career, identity). */
   life_context?: string | null;
+  /** Array of 63 shuffled image indices (0-20) for randomizing affirmation backgrounds. */
+  image_sequence?: number[] | null;
 }

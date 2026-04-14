@@ -217,6 +217,7 @@ export default function GeneratorScreen() {
           summary: result.summary,
           credits_used: 1,
           life_context: lifeContext,
+          image_sequence: result.image_sequence || null,
           created_at: new Date().toISOString(),
         })
         .select()
@@ -357,6 +358,7 @@ export default function GeneratorScreen() {
         summary: data.summary ?? {},
         tempGenerationId: data.tempGenerationId ?? '',
         life_context: data.life_context ?? undefined,
+        image_sequence: data.image_sequence ?? undefined,
       });
       // Don't navigate to modal - show results inline
       if (showHints) {

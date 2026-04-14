@@ -23,6 +23,8 @@ export interface GenerationResult {
   tempGenerationId: string;
   /** Life-context slug from backend for affirmation image folder (e.g. career, identity). */
   life_context?: string;
+  /** Array of 63 shuffled image indices (0-20) for randomizing affirmation backgrounds. */
+  image_sequence?: number[];
 }
 
 interface GenerationResultContextType {
