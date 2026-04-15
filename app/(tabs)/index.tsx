@@ -211,6 +211,13 @@ export default function HomeScreen() {
           ).then(async (res) => {
             if (res.ok) {
               const data = await res.json();
+              console.log('🌟 Today Affirmation API Response for timeline:', t.id);
+              console.log('  - affirmation_index:', data.affirmation_index);
+              console.log('  - image_index:', data.image_index);
+              console.log('  - image_url:', data.image_url);
+              console.log('  - life_context:', data.life_context);
+              console.log('  - affirmed:', data.affirmed);
+              console.log('  - Full response:', JSON.stringify(data, null, 2));
               return {
                 timelineId: t.id,
                 outcome: t.outcome,

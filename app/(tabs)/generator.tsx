@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,7 +26,7 @@ import { useGenerationResult } from '@/contexts/GenerationResultContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
-import { apiPost } from '@/lib/api';
+import { apiPost, apiGet } from '@/lib/api';
 import { parseActionDate } from '@/lib/parseActionDate';
 import {
   DEFAULT_IMAGE_COUNT_PER_CONTEXT,
@@ -44,6 +45,10 @@ const APPROACHES: { value: Approach; label: string; desc: string }[] = [
   { value: 'aggressive', label: 'Aggressive', desc: 'Bold, high-impact actions' },
 ];
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const POSTER_WIDTH = Math.floor(SCREEN_WIDTH - 80);
+const POSTER_HEIGHT = Math.floor(POSTER_WIDTH * (16 / 9));
+
 function mapActionToLinks(action: TimelineAction): TimelineActionLink[] {
   const links: TimelineActionLink[] = [];
   action.articles?.forEach((a) => links.push({ title: a.title, url: a.url }));
@@ -60,7 +65,7 @@ export default function GeneratorScreen() {
   const router = useRouter();
   const { user, session, isFirstTimeUser } = useAuth();
   const { result, setResult, clearResult } = useGenerationResult();
-  const { tier, credits, isFree } = useSubscription();
+  const { tier, credits, isFree, refreshCredits } = useSubscription();
   const { setLevelUp } = useLevelUp();
   const { invalidate } = usePointsRefresh();
   const insets = useSafeAreaInsets();
@@ -78,6 +83,7 @@ export default function GeneratorScreen() {
   const [saveError, setSaveError] = useState('');
   const [affirmed, setAffirmed] = useState(false);
   const [affirmLoading, setAffirmLoading] = useState(false);
+  const [affirmationImageUrl, setAffirmationImageUrl] = useState<string | null>(null);
   const [completedActions, setCompletedActions] = useState<number[]>([]);
   const [skippedActions, setSkippedActions] = useState<number[]>([]);
 
@@ -89,6 +95,7 @@ export default function GeneratorScreen() {
   const [showHints, setShowHints] = useState(false);
 
   const lottieRef = useRef<LottieView | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const paddingBottom = insets.bottom + 100;
   const costPerGeneration = 1;
@@ -131,6 +138,13 @@ export default function GeneratorScreen() {
     }
     setShowHints(false);
   }, [user]);
+
+  // Scroll to top when results appear
+  useEffect(() => {
+    if (result) {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }
+  }, [result]);
 
   const handleResetForm = useCallback(() => {
     const hasContent = outcome.trim() || context.trim() || availableResources.trim();
@@ -244,12 +258,25 @@ export default function GeneratorScreen() {
       await supabase.from('daily_affirmations').insert(dailyAffirmations);
       setSaved(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Fetch today's affirmation with the correct image URL
+      if (session) {
+        const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const affirmRes = await apiGet(
+          `/api/today-affirmation/${savedTimeline.id}?tz=${encodeURIComponent(timeZone)}`,
+          session
+        );
+        if (affirmRes.ok) {
+          const affirmData = await affirmRes.json();
+          setAffirmationImageUrl(affirmData.image_url || null);
+        }
+      }
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Failed to save. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }
-  }, [user, result]);
+  }, [user, result, session]);
 
   const handleGenerateAnother = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -257,6 +284,7 @@ export default function GeneratorScreen() {
     setSaved(false);
     setSaveError('');
     setAffirmed(false);
+    setAffirmationImageUrl(null);
     setCompletedActions([]);
     setSkippedActions([]);
   }, [clearResult]);
@@ -266,6 +294,7 @@ export default function GeneratorScreen() {
     setSaved(false);
     setSaveError('');
     setAffirmed(false);
+    setAffirmationImageUrl(null);
     setCompletedActions([]);
     setSkippedActions([]);
     router.push('/(tabs)/logs');
@@ -360,6 +389,8 @@ export default function GeneratorScreen() {
         life_context: data.life_context ?? undefined,
         image_sequence: data.image_sequence ?? undefined,
       });
+      // Refresh credits display after generation
+      await refreshCredits();
       // Don't navigate to modal - show results inline
       if (showHints) {
         dismissHintsForUser();
@@ -386,6 +417,7 @@ export default function GeneratorScreen() {
     router,
     showHints,
     dismissHintsForUser,
+    refreshCredits,
   ]);
 
   return (
@@ -397,6 +429,7 @@ export default function GeneratorScreen() {
         transition={300}
       />
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + glassSpacing.md, paddingBottom }]}
         keyboardShouldPersistTaps="handled"
@@ -651,11 +684,11 @@ export default function GeneratorScreen() {
                   ) : null}
                   
                   <GlassButton
-                    title={saving ? 'Saving…' : saved ? 'Saved!' : 'Save timeline'}
+                    title={saving ? 'Saving…' : saved ? 'Saved!' : 'Save timeline to view daily affirmations'}
                     onPress={handleSaveTimeline}
                     disabled={saving || saved}
                     style={styles.saveButton}
-                    accessibilityLabel={saved ? 'Saved' : 'Save timeline'}
+                    accessibilityLabel={saved ? 'Saved' : 'Save timeline to view daily affirmations'}
                   />
 
                   {nextAction && nextActionTargetDate && (
@@ -728,17 +761,35 @@ export default function GeneratorScreen() {
                     </Text>
                   )}
 
-                  {affirmationText ? (
-                    <AffirmationCard
-                      text={affirmationText}
-                      date={todayFormatted}
-                      affirmed={affirmed}
-                      onAffirm={handleAffirm}
-                      onShare={() => {
-                        /* Poster image is captured and shared by AffirmationCard */
-                      }}
-                    />
-                  ) : null}
+                  {saved ? (
+                    affirmationText ? (
+                      <View style={styles.affirmationCardWrapper}>
+                        <AffirmationCard
+                          text={affirmationText}
+                          date={todayFormatted}
+                          affirmed={affirmed}
+                          imageUrl={affirmationImageUrl}
+                          affirmLoading={affirmLoading}
+                          onAffirm={handleAffirm}
+                          onShare={() => {
+                            /* Poster image is captured and shared by AffirmationCard */
+                          }}
+                        />
+                      </View>
+                    ) : null
+                  ) : (
+                    <GlassCard cardStyle={styles.lockedAffirmationCard}>
+                      <Text style={styles.lockedTitle}>Today's cosmic affirmation</Text>
+                      <Text style={styles.lockedDate}>{todayFormatted}</Text>
+                      <View style={styles.lockedPoster}>
+                        <View style={styles.lockedPosterOverlay}>
+                          <Text style={styles.lockedPosterText}>
+                            Save timeline to view daily affirmations
+                          </Text>
+                        </View>
+                      </View>
+                    </GlassCard>
+                  )}
 
                   {saved && (
                     <GlassButton
@@ -985,5 +1036,42 @@ const styles = StyleSheet.create({
     ...glassTypography.bodySmall,
     color: glassColors.error,
     textAlign: 'center',
+  },
+  affirmationCardWrapper: {
+    marginBottom: glassSpacing.lg,
+  },
+  lockedAffirmationCard: {
+    marginBottom: glassSpacing.lg,
+  },
+  lockedTitle: {
+    ...glassTypography.h5,
+    color: glassColors.text.primary,
+    marginBottom: glassSpacing.xs,
+  },
+  lockedDate: {
+    ...glassTypography.bodySmall,
+    color: glassColors.text.tertiary,
+    marginBottom: glassSpacing.md,
+  },
+  lockedPoster: {
+    width: POSTER_WIDTH,
+    height: POSTER_HEIGHT,
+    backgroundColor: '#0a0a0f',
+    overflow: 'hidden',
+    marginBottom: glassSpacing.lg,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lockedPosterOverlay: {
+    paddingHorizontal: glassSpacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lockedPosterText: {
+    ...glassTypography.bodyLarge,
+    color: glassColors.text.primary,
+    textAlign: 'center',
+    fontFamily: 'Times New Roman',
   },
 });

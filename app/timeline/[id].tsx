@@ -127,6 +127,13 @@ export default function TimelineDetailScreen() {
       );
       if (!res.ok) return;
       const data = await res.json();
+      console.log('🌟 Today Affirmation API Response for timeline detail:', id);
+      console.log('  - affirmation_index:', data.affirmation_index);
+      console.log('  - image_index:', data.image_index);
+      console.log('  - image_url:', data.image_url);
+      console.log('  - life_context:', data.life_context);
+      console.log('  - affirmed:', data.affirmed);
+      console.log('  - Full response:', JSON.stringify(data, null, 2));
       setAffirmationIndex(data.affirmation_index ?? 0);
       setAffirmationText(data.affirmation_text ?? '');
       setAffirmed(data.affirmed === true);
