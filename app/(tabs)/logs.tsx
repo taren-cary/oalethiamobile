@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,6 +12,14 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/empty-state';
 import { GlassCard } from '@/components/glass';
@@ -30,6 +38,35 @@ function TimelineLogCard({
   onPress: () => void;
   onDelete: () => void;
 }) {
+  const swipeableRef = useRef<Swipeable>(null);
+  const opacity = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  const handleDelete = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    swipeableRef.current?.close();
+    // Animate out
+    opacity.value = withTiming(0, { duration: 300 });
+    setTimeout(() => {
+      onDelete();
+    }, 300);
+  };
+
+  const renderRightActions = () => (
+    <Pressable
+      onPress={handleDelete}
+      style={styles.deleteAction}
+      accessibilityRole="button"
+      accessibilityLabel="Delete timeline"
+    >
+      <Ionicons name="trash-outline" size={24} color="#ffffff" />
+      <Text style={styles.deleteText}>Delete</Text>
+    </Pressable>
+  );
+
   const created = new Date(timeline.created_at).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -38,23 +75,32 @@ function TimelineLogCard({
   const actionCount = timeline.actions?.length ?? 0;
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onDelete}
-      style={({ pressed }) => [pressed && styles.cardPressed]}
-      accessibilityRole="button"
-      accessibilityLabel={`Open timeline: ${timeline.outcome}`}
-      accessibilityHint="Double tap to open. Long press to delete."
-    >
-      <GlassCard>
-        <Text style={styles.cardGoal} numberOfLines={2}>
-          {timeline.outcome}
-        </Text>
-        <Text style={styles.cardMeta}>
-          {actionCount} actions · {created}
-        </Text>
-      </GlassCard>
-    </Pressable>
+    <Animated.View style={animatedStyle}>
+      <Swipeable
+        ref={swipeableRef}
+        renderRightActions={renderRightActions}
+        overshootRight={false}
+        friction={2}
+        rightThreshold={40}
+      >
+        <Pressable
+          onPress={onPress}
+          style={({ pressed }) => [pressed && styles.cardPressed]}
+          accessibilityRole="button"
+          accessibilityLabel={`Open timeline: ${timeline.outcome}`}
+          accessibilityHint="Swipe left to delete"
+        >
+          <GlassCard>
+            <Text style={styles.cardGoal} numberOfLines={2}>
+              {timeline.outcome}
+            </Text>
+            <Text style={styles.cardMeta}>
+              {actionCount} actions · {created}
+            </Text>
+          </GlassCard>
+        </Pressable>
+      </Swipeable>
+    </Animated.View>
   );
 }
 
@@ -107,7 +153,7 @@ export default function LogsScreen() {
     (timeline: SavedTimeline) => {
       Alert.alert(
         'Delete timeline',
-        `Are you sure you want to delete "${timeline.outcome}"?`,
+        `Are you sure you want to delete "${timeline.outcome}"? This will remove all actions and affirmations.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
@@ -115,15 +161,22 @@ export default function LogsScreen() {
             style: 'destructive',
             onPress: async () => {
               try {
-                const { error: err } = await supabase
+                // CASCADE constraint will automatically delete daily_affirmations and user_action_progress
+                const { error } = await supabase
                   .from('action_timeline_generations')
                   .delete()
                   .eq('id', timeline.id)
                   .eq('user_id', user!.id);
-                if (err) throw err;
+                  
+                if (error) throw error;
+
+                // Update local state
                 setTimelines((prev) => prev.filter((t) => t.id !== timeline.id));
+                
+                // Success haptic
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               } catch {
-                Alert.alert('Error', 'Failed to delete timeline.');
+                Alert.alert('Error', 'Failed to delete timeline. Please try again.');
               }
             },
           },
@@ -331,5 +384,19 @@ const styles = StyleSheet.create({
   cardMeta: {
     ...glassTypography.bodySmall,
     color: glassColors.text.tertiary,
+  },
+  deleteAction: {
+    backgroundColor: glassColors.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 90,
+    marginLeft: glassSpacing.sm,
+    borderRadius: 20,
+    paddingHorizontal: glassSpacing.md,
+  },
+  deleteText: {
+    ...glassTypography.labelSmall,
+    color: '#ffffff',
+    marginTop: 4,
   },
 });

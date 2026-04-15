@@ -10,9 +10,10 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 import { AffirmationCard } from '@/components/affirmation-card';
-import { GlassCard } from '@/components/glass';
+import { GlassCard, GlassButton } from '@/components/glass';
 import { TimelineActionCard } from '@/components/timeline-action-card';
 import type { TimelineActionLink } from '@/components/timeline-action-card';
 import { NextActionCard } from '@/components/next-action-card/NextActionCard';
@@ -263,6 +264,40 @@ export default function TimelineDetailScreen() {
     }
   }, [id, session, affirmationIndex, affirmationText, timeline, affirmLoading, setLevelUp, invalidate]);
 
+  const handleDeleteTimeline = useCallback(async () => {
+    if (!user || !timeline) return;
+    
+    Alert.alert(
+      'Delete timeline',
+      `Are you sure you want to delete "${timeline.outcome}"? This will permanently remove all actions and affirmations.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // CASCADE constraint will automatically delete daily_affirmations and user_action_progress
+              const { error } = await supabase
+                .from('action_timeline_generations')
+                .delete()
+                .eq('id', timeline.id)
+                .eq('user_id', user.id);
+                
+              if (error) throw error;
+
+              // Success haptic and navigate back
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.back();
+            } catch {
+              Alert.alert('Error', 'Failed to delete timeline. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  }, [user, timeline, router]);
+
   const visibleActions =
     timeline?.actions?.filter((_, i) => !skippedActions.includes(i)) ?? [];
 
@@ -389,6 +424,13 @@ export default function TimelineDetailScreen() {
               /* Poster image is captured and shared by AffirmationCard */
             }}
           />
+          <GlassButton
+            title="Delete Timeline"
+            onPress={handleDeleteTimeline}
+            variant="secondary"
+            style={styles.deleteButton}
+            accessibilityLabel="Delete this timeline and all its data"
+          />
         </View>
       ) : null}
     </ScrollView>
@@ -438,6 +480,9 @@ const styles = StyleSheet.create({
   },
   affirmationSection: {
     gap: glassSpacing.md,
+  },
+  deleteButton: {
+    marginTop: glassSpacing.md,
   },
   lockedTitle: {
     ...glassTypography.h5,
