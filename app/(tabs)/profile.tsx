@@ -350,7 +350,8 @@ export default function ProfileScreen() {
     if (invalidateAt <= 0) return;
     fetchLevel();
     fetchProfile();
-  }, [invalidateAt, fetchLevel, fetchProfile]);
+    fetchLeaderboardPreview();
+  }, [invalidateAt, fetchLevel, fetchProfile, fetchLeaderboardPreview]);
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
