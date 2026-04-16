@@ -40,6 +40,7 @@ function TimelineLogCard({
 }) {
   const swipeableRef = useRef<Swipeable>(null);
   const opacity = useSharedValue(1);
+  const [isSwiping, setIsSwiping] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -82,9 +83,13 @@ function TimelineLogCard({
         overshootRight={false}
         friction={2}
         rightThreshold={40}
+        onSwipeableWillOpen={() => setIsSwiping(true)}
+        onSwipeableClose={() => setIsSwiping(false)}
       >
         <Pressable
-          onPress={onPress}
+          onPress={() => {
+            if (!isSwiping) onPress();
+          }}
           style={({ pressed }) => [pressed && styles.cardPressed]}
           accessibilityRole="button"
           accessibilityLabel={`Open timeline: ${timeline.outcome}`}
