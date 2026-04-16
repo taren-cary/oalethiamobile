@@ -39,7 +39,6 @@ export function SwipeableAffirmationCard({
   const posterRefs = useRef<Record<number, React.ElementRef<typeof ViewShot> | null>>({});
   const listRef = useRef<FlatList<TodayAffirmationItem> | null>(null);
   const currentIndexRef = useRef(0);
-  const isScrollingProgrammaticallyRef = useRef(false);
 
   currentIndexRef.current = currentIndex;
 
@@ -87,29 +86,11 @@ export function SwipeableAffirmationCard({
   const onMomentumScrollEnd = useCallback(
     (e: { nativeEvent: { contentOffset: { x: number } } }) => {
       if (posterWidth <= 0) return;
-      if (isScrollingProgrammaticallyRef.current) {
-        isScrollingProgrammaticallyRef.current = false;
-        return;
-      }
       const offsetX = e.nativeEvent.contentOffset.x;
       const landedIndex = Math.round(offsetX / posterWidth);
       const bounded = Math.max(0, Math.min(items.length - 1, landedIndex));
-      const latestIndex = currentIndexRef.current;
-      const nextIndex =
-        bounded > latestIndex + 1
-          ? latestIndex + 1
-          : bounded < latestIndex - 1
-            ? latestIndex - 1
-            : bounded;
-      setCurrentIndex(nextIndex);
-      currentIndexRef.current = nextIndex;
-      if (nextIndex !== bounded) {
-        isScrollingProgrammaticallyRef.current = true;
-        listRef.current?.scrollToOffset({
-          offset: nextIndex * posterWidth,
-          animated: true,
-        });
-      }
+      setCurrentIndex(bounded);
+      currentIndexRef.current = bounded;
     },
     [items.length, posterWidth]
   );
@@ -144,10 +125,9 @@ export function SwipeableAffirmationCard({
             keyExtractor={(item) => item.timelineId}
             renderItem={renderPoster}
             horizontal
-            pagingEnabled
             snapToInterval={posterWidth}
             snapToAlignment="start"
-            decelerationRate={0.92}
+            decelerationRate={0.988}
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={onMomentumScrollEnd}
             getItemLayout={(_, index) => ({
