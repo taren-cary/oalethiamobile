@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "com.oalethia.oalethia",
-      "supportsTablet": true,
+      "supportsTablet": false,
       "infoPlist": {
         "NSUserNotificationUsageDescription": "Oalethia sends gentle reminders for your daily affirmations and important timeline actions, so you can stay on track with your goals."
       }
