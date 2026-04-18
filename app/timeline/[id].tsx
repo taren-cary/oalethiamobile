@@ -380,6 +380,9 @@ export default function TimelineDetailScreen() {
       {!isFree &&
         timeline.actions.map((action, index) => {
           if (skippedActions.includes(index)) return null;
+          if (nextActionForCard && index === nextActionForCard.nextActionOriginalIndex) {
+            return null; // Already shown in NextActionCard above
+          }
           return (
             <TimelineActionCard
               key={index}

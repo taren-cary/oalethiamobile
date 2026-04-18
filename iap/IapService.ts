@@ -192,6 +192,24 @@ async function InAppPurchasesMaybeVerifyAndFinish(
     return;
   }
 
+  // After successful verification, call the credit purchase endpoint if this is a credits purchase
+  if (meta.receiptType === 'credits' && meta.creditsToAdd) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
+      if (session) {
+        await fetch(`${API_BASE_URL}/api/credits/purchase`, {
+          method: 'POST',
+          headers: getAuthHeaders(session),
+          body: JSON.stringify({ amount: meta.creditsToAdd }),
+        });
+      }
+    } catch (e) {
+      // Log but don't fail the purchase - the backend verification already succeeded
+      console.warn('Failed to call credit purchase endpoint:', e);
+    }
+  }
+
   if (!purchase.acknowledged) {
     await mod.InAppPurchases.finishTransactionAsync(purchase, meta.consumeOnAndroid);
   }
@@ -217,6 +235,24 @@ async function verifyReceiptOnServer(args: {
   });
 
   if (error) throw new Error(error.message ?? 'Could not verify purchase.');
+
+  // After successful verification, call the credit purchase endpoint if this is a credits purchase
+  if (args.receiptType === 'credits' && args.creditsToAdd) {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
+      if (session) {
+        await fetch(`${API_BASE_URL}/api/credits/purchase`, {
+          method: 'POST',
+          headers: getAuthHeaders(session),
+          body: JSON.stringify({ amount: args.creditsToAdd }),
+        });
+      }
+    } catch (e) {
+      // Log but don't fail the purchase - the backend verification already succeeded
+      console.warn('Failed to call credit purchase endpoint:', e);
+    }
+  }
 }
 
 /**
