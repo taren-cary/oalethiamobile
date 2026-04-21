@@ -15,10 +15,7 @@
       }
     },
     "production": {
-      "autoIncrement": true,
-      "env": {
-        "SENTRY_AUTH_TOKEN": "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"
-      }
+      "autoIncrement": true
     }
   },
   "submit": {
