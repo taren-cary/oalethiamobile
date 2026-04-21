@@ -7,7 +7,7 @@
     "icon": "./assets/images/oalethiaicon.png",
     "scheme": "oalethiamobile",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "ios": {
       "bundleIdentifier": "com.oalethia.oalethia",
       "supportsTablet": false,
