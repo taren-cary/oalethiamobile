@@ -17,7 +17,8 @@
         "NSPhotoLibraryUsageDescription": "Allow Oalethia to access your photos to set a profile picture.",
         "NSPhotoLibraryAddUsageDescription": "Allow Oalethia to save photos to your library.",
         "NSCameraUsageDescription": "Allow Oalethia to use the camera to take a profile picture.",
-        "NSMicrophoneUsageDescription": "Allow Oalethia to access your microphone (required for camera use)."
+        "NSMicrophoneUsageDescription": "Allow Oalethia to access your microphone (required for camera use).",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -29,7 +30,10 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -69,6 +73,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8eeccca4-c3ec-476d-96d2-d024fec5082a"
+      }
     }
   }
 }
