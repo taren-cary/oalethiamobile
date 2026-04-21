@@ -69,7 +69,13 @@
           "sounds": []
         }
       ],
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "organization": "oalethia",
+          "project": "oalethia-mobile"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
