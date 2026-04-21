@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import {
   Orbitron_500Medium,
   Orbitron_600SemiBold,
