@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm show *)",
+      "Bash(node -e \"const r = require.resolve\\('expo-notifications/package.json'\\); console.log\\(r\\);\")",
+      "Bash(node -e \"const r = require.resolve\\('expo-notifications/src/NotificationPermissions.types'\\); console.log\\(r\\);\")",
+      "Bash(npm list *)"
+    ]
+  }
+}
