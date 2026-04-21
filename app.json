@@ -13,7 +13,11 @@
       "supportsTablet": false,
       "buildNumber": "1",
       "infoPlist": {
-        "NSUserNotificationUsageDescription": "Oalethia sends gentle reminders for your daily affirmations and important timeline actions, so you can stay on track with your goals."
+        "NSUserNotificationUsageDescription": "Oalethia sends gentle reminders for your daily affirmations and important timeline actions, so you can stay on track with your goals.",
+        "NSPhotoLibraryUsageDescription": "Allow Oalethia to access your photos to set a profile picture.",
+        "NSPhotoLibraryAddUsageDescription": "Allow Oalethia to save photos to your library.",
+        "NSCameraUsageDescription": "Allow Oalethia to use the camera to take a profile picture.",
+        "NSMicrophoneUsageDescription": "Allow Oalethia to access your microphone (required for camera use)."
       }
     },
     "android": {
