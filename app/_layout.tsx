@@ -1,4 +1,12 @@
 import 'react-native-gesture-handler';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://1323004eff420e1c18e73cc2e5f93eb9@o4510359608754176.ingest.us.sentry.io/4511258822574080',
+  tracesSampleRate: 1.0,
+  attachStacktrace: true,
+});
+
 import {
   Orbitron_500Medium,
   Orbitron_600SemiBold,
@@ -53,7 +61,7 @@ export const unstable_settings = {
   anchor: '(tabs)',
 };
 
-export default function RootLayout() {
+function RootLayout() {
   const colorScheme = useColorScheme();
   const [showAnimatedSplash, setShowAnimatedSplash] = useState(true);
 
@@ -307,3 +315,5 @@ function AppShell({ colorScheme }: AppShellProps) {
     </>
   );
 }
+
+export default Sentry.wrap(RootLayout);
