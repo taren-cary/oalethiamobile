@@ -1,0 +1,95 @@
+module.exports = {
+  expo: {
+    name: 'OalethiaMobile',
+    slug: 'OalethiaMobile',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/images/oalethiaicon.png',
+    scheme: 'oalethiamobile',
+    userInterfaceStyle: 'automatic',
+    newArchEnabled: true,
+    ios: {
+      bundleIdentifier: 'com.oalethia.oalethia',
+      supportsTablet: false,
+      buildNumber: '1',
+      infoPlist: {
+        NSUserNotificationUsageDescription:
+          'Oalethia sends gentle reminders for your daily affirmations and important timeline actions, so you can stay on track with your goals.',
+        NSPhotoLibraryUsageDescription:
+          'Allow Oalethia to access your photos to set a profile picture.',
+        NSPhotoLibraryAddUsageDescription:
+          'Allow Oalethia to save photos to your library.',
+        NSCameraUsageDescription:
+          'Allow Oalethia to use the camera to take a profile picture.',
+        NSMicrophoneUsageDescription:
+          'Allow Oalethia to access your microphone (required for camera use).',
+        ITSAppUsesNonExemptEncryption: false,
+      },
+    },
+    android: {
+      package: 'com.oalethia.oalethia',
+      adaptiveIcon: {
+        backgroundColor: '#E6F4FE',
+        foregroundImage: './assets/images/android-icon-foreground.png',
+        backgroundImage: './assets/images/android-icon-background.png',
+        monochromeImage: './assets/images/android-icon-monochrome.png',
+      },
+      edgeToEdgeEnabled: true,
+      predictiveBackGestureEnabled: false,
+      permissions: ['android.permission.RECORD_AUDIO'],
+    },
+    web: {
+      output: 'static',
+      favicon: './assets/images/favicon.png',
+    },
+    plugins: [
+      'expo-router',
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/images/oalethiamobilebackground.jpeg',
+          resizeMode: 'cover',
+          backgroundColor: '#0a0a0f',
+          dark: { backgroundColor: '#0a0a0f' },
+        },
+      ],
+      'expo-font',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Allow Oalethia to access your photos to set a profile picture.',
+          cameraPermission: 'Allow Oalethia to use the camera to take a profile picture.',
+        },
+      ],
+      '@react-native-community/datetimepicker',
+      [
+        'expo-notifications',
+        {
+          icon: './assets/images/icon.png',
+          color: '#6366f1',
+          sounds: [],
+        },
+      ],
+      [
+        '@sentry/react-native',
+        {
+          organization: 'oalethia',
+          project: 'oalethia-mobile',
+        },
+      ],
+    ],
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: false,
+    },
+    extra: {
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      apiUrl: process.env.EXPO_PUBLIC_API_URL,
+      router: {},
+      eas: {
+        projectId: '8eeccca4-c3ec-476d-96d2-d024fec5082a',
+      },
+    },
+  },
+};
