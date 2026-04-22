@@ -9,7 +9,7 @@ import React, {
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { IapService } from '@/iap/IapService';
+import { IapService, configureRevenueCat } from '@/iap/IapService';
 import { apiGet } from '@/lib/api';
 import { subscribeToIapUpdates } from '@/lib/iapEvents';
 
@@ -124,6 +124,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
       setLoading(false);
       return;
     }
+    configureRevenueCat(session.user.id);
     fetchAll();
   }, [session, fetchAll]);
 
