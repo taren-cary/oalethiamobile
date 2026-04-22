@@ -38,16 +38,6 @@ export function configureRevenueCat(userId: string) {
   configured = true;
 }
 
-async function getPackageForProduct(productId: string): Promise<PurchasesPackage | null> {
-  try {
-    const offerings = await Purchases.getOfferings();
-    const allPackages = Object.values(offerings.all).flatMap((o) => o.availablePackages);
-    return allPackages.find((p) => p.product.identifier === productId) ?? null;
-  } catch {
-    return null;
-  }
-}
-
 async function buyPackage(productId: string): Promise<PurchaseResult> {
   if (!configured) {
     return { ok: false, errorMessage: 'In-app purchases are not available. Please try again.' };
@@ -56,12 +46,23 @@ async function buyPackage(productId: string): Promise<PurchaseResult> {
   try {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    const pkg = await getPackageForProduct(productId);
-    if (!pkg) {
-      return { ok: false, errorMessage: 'Product not available. Please try again later.' };
+    // Try offerings first (subscriptions are usually packaged here).
+    const offerings = await Purchases.getOfferings();
+    const allPackages = Object.values(offerings.all).flatMap((o) => o.availablePackages);
+    const pkg = allPackages.find((p) => p.product.identifier === productId) ?? null;
+
+    if (pkg) {
+      await Purchases.purchasePackage(pkg);
+    } else {
+      // Consumables may not be in any offering — fetch the product directly.
+      const products = await Purchases.getProducts([productId]);
+      const product = products[0];
+      if (!product) {
+        return { ok: false, errorMessage: 'Product not available. Please try again later.' };
+      }
+      await Purchases.purchaseStoreProduct(product);
     }
 
-    await Purchases.purchasePackage(pkg);
     emitIapUpdated();
     return { ok: true };
   } catch (e: any) {
