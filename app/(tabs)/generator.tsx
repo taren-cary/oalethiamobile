@@ -139,6 +139,14 @@ export default function GeneratorScreen() {
     setShowHints(false);
   }, [user]);
 
+  // Ensure credits are loaded when landing on this screen (e.g. first-time users
+  // who arrive before SubscriptionContext has had a chance to fetch).
+  useEffect(() => {
+    if (credits === null) {
+      refreshCredits();
+    }
+  }, []);
+
   // Scroll to top when results appear
   useEffect(() => {
     if (result) {
