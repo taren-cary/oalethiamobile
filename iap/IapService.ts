@@ -46,15 +46,19 @@ async function buyPackage(productId: string): Promise<PurchaseResult> {
   try {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-    // Try offerings first (subscriptions are usually packaged here).
-    const offerings = await Purchases.getOfferings();
-    const allPackages = Object.values(offerings.all).flatMap((o) => o.availablePackages);
-    const pkg = allPackages.find((p) => p.product.identifier === productId) ?? null;
+    // Try offerings first; if none are configured, fall through to direct product fetch.
+    let pkg: PurchasesPackage | null = null;
+    try {
+      const offerings = await Purchases.getOfferings();
+      const allPackages = Object.values(offerings.all).flatMap((o) => o.availablePackages);
+      pkg = allPackages.find((p) => p.product.identifier === productId) ?? null;
+    } catch {
+      // No offerings configured — will purchase by product ID directly below.
+    }
 
     if (pkg) {
       await Purchases.purchasePackage(pkg);
     } else {
-      // Consumables may not be in any offering — fetch the product directly.
       const products = await Purchases.getProducts([productId]);
       const product = products[0];
       if (!product) {
