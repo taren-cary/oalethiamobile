@@ -49,7 +49,7 @@ export async function scheduleNextActionReminders(
             : 'Open Oalethia to review and take your next steps.',
         data: { type: 'next-actions', date: dayKey, count },
       },
-      trigger: triggerDate,
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
     });
 
     ids.push(id);
@@ -70,7 +70,7 @@ export async function scheduleNextActionReminders(
               : 'You have several actions coming up soon. Open Oalethia to get ready.',
           data: { type: 'next-actions-pre', date: dayKey, count },
         },
-        trigger: threeDaysBefore,
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: threeDaysBefore },
       });
       ids.push(idPre);
     }

@@ -89,9 +89,9 @@ export async function scheduleDailyAffirmationReminder(
       data: { type: 'daily-affirmation' },
     },
     trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour: time.hour,
       minute: time.minute,
-      repeats: true,
     },
   });
 
