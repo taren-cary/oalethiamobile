@@ -723,14 +723,33 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.subRowDivider} />
             <Pressable
-              style={({ pressed }) => [styles.subRow, pressed && styles.settingsRowPressed]}
-              onPress={() => router.push({ pathname: '/modal', params: { type: 'subscription' } })}
+              style={({ pressed }) => [
+                styles.subRow,
+                pressed && !subscriptionStatus?.isFree && styles.settingsRowPressed,
+                !subscriptionStatus?.isFree && styles.settingsRowDisabled,
+              ]}
+              onPress={subscriptionStatus?.isFree
+                ? () => router.push({ pathname: '/modal', params: { type: 'subscription' } })
+                : undefined}
               accessibilityRole="button"
-              accessibilityLabel="Upgrade to Premium"
+              accessibilityLabel={subscriptionStatus?.isFree ? 'Upgrade to Premium' : 'Already on Premium'}
+              accessibilityState={{ disabled: !subscriptionStatus?.isFree }}
             >
-              <Ionicons name="star-outline" size={20} color={glassColors.primary} />
-              <Text style={styles.settingsRowLabel}>Upgrade to Premium</Text>
-              <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+              <Ionicons
+                name={subscriptionStatus?.isFree ? 'star-outline' : 'star'}
+                size={20}
+                color={subscriptionStatus?.isFree ? glassColors.primary : glassColors.text.tertiary}
+              />
+              <Text style={[
+                styles.settingsRowLabel,
+                !subscriptionStatus?.isFree && { color: glassColors.text.tertiary },
+              ]}>
+                {subscriptionStatus?.isFree ? 'Upgrade to Premium' : 'Premium active'}
+              </Text>
+              {subscriptionStatus?.isFree
+                ? <Ionicons name="chevron-forward" size={18} color={glassColors.text.tertiary} />
+                : <Ionicons name="checkmark" size={18} color={glassColors.text.tertiary} />
+              }
             </Pressable>
             <View style={styles.settingsRowDivider} />
             <Pressable
