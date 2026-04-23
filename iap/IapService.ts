@@ -46,6 +46,9 @@ async function buyPackage(productId: string): Promise<PurchaseResult> {
   try {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
+    // Flush any pending unfinished transactions before starting a new purchase.
+    await Purchases.syncPurchases().catch(() => {});
+
     // Try offerings first; if none are configured, fall through to direct product fetch.
     let pkg: PurchasesPackage | null = null;
     try {
@@ -70,10 +73,11 @@ async function buyPackage(productId: string): Promise<PurchaseResult> {
     emitIapUpdated();
     return { ok: true };
   } catch (e: any) {
-    if (e?.userCancelled) {
+    if (e?.userCancelled === true) {
       return { ok: false, cancelled: true };
     }
-    return { ok: false, errorMessage: e?.message ?? 'Purchase failed. Please try again.' };
+    const message = e?.message ?? e?.code ?? JSON.stringify(e) ?? 'Purchase failed. Please try again.';
+    return { ok: false, errorMessage: message };
   }
 }
 

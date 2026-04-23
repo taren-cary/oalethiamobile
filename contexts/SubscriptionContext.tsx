@@ -129,12 +129,21 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   }, [session, fetchAll]);
 
   // Re-fetch whenever a purchase or restore completes (emitted by IapService).
+  // The webhook that updates the DB fires asynchronously after the purchase, so
+  // we do an immediate fetch + a delayed fetch to catch the webhook-driven update.
   useEffect(() => {
+    let delayedTimer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribe = subscribeToIapUpdates(() => {
       fetchAll();
+      delayedTimer = setTimeout(() => {
+        Promise.all([refreshSubscription(), refreshCredits()]).catch(() => {});
+      }, 4000);
     });
-    return unsubscribe;
-  }, [fetchAll]);
+    return () => {
+      unsubscribe();
+      if (delayedTimer) clearTimeout(delayedTimer);
+    };
+  }, [fetchAll, refreshSubscription, refreshCredits]);
 
   // On every foreground transition: sync StoreKit entitlements then re-fetch.
   // This keeps subscription state fresh after the user manages a subscription
