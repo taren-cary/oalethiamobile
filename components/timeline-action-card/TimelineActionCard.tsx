@@ -13,6 +13,8 @@ export interface TimelineActionLink {
   url: string;
 }
 
+export type HistoryStatus = 'completed' | 'skipped' | 'missed';
+
 export interface TimelineActionCardProps {
   date: string;
   action: string;
@@ -24,9 +26,17 @@ export interface TimelineActionCardProps {
   onSkip?: () => void;
   staggerIndex?: number;
   reduceMotion?: boolean;
+  /** When set, renders in read-only history mode — no buttons, shows status badge. */
+  historyStatus?: HistoryStatus;
 }
 
 const MIN_TOUCH = 44;
+
+const HISTORY_CONFIG: Record<HistoryStatus, { label: string; icon: string; color: string }> = {
+  completed: { label: 'Completed', icon: 'checkmark-circle', color: glassColors.success },
+  skipped: { label: 'Skipped', icon: 'remove-circle-outline', color: glassColors.text.tertiary },
+  missed: { label: 'Missed', icon: 'close-circle-outline', color: 'rgba(239,68,68,0.7)' },
+};
 
 export function TimelineActionCard({
   date,
@@ -39,6 +49,7 @@ export function TimelineActionCard({
   onSkip,
   staggerIndex = 0,
   reduceMotion = false,
+  historyStatus,
 }: TimelineActionCardProps) {
   const [expanded, setExpanded] = useState(false);
 
@@ -65,36 +76,59 @@ export function TimelineActionCard({
     ? undefined
     : FadeInDown.delay(Math.min(staggerIndex * 100, 500)).springify();
 
+  const isHistory = historyStatus != null;
+  const historyCfg = historyStatus ? HISTORY_CONFIG[historyStatus] : null;
+
   return (
-    <Animated.View entering={entering}>
+    <Animated.View entering={entering} style={isHistory && styles.historyWrapper}>
       <GlassCard>
         <View style={styles.row}>
-          <Pressable
-            onPress={handleToggleComplete}
-            style={({ pressed }) => [styles.checkboxWrap, pressed && styles.pressed]}
-            hitSlop={8}
-            accessibilityRole="checkbox"
-            accessibilityLabel={completed ? 'Action completed' : 'Mark action complete'}
-            accessibilityState={{ checked: completed }}
-          >
-            <View style={[styles.checkbox, completed && styles.checkboxChecked]}>
-              {completed && (
-                <Ionicons name="checkmark" size={20} color={glassColors.text.primary} />
-              )}
+          {isHistory ? (
+            <View style={styles.checkboxWrap}>
+              <Ionicons
+                name={historyCfg!.icon as any}
+                size={24}
+                color={historyCfg!.color}
+              />
             </View>
-          </Pressable>
+          ) : (
+            <Pressable
+              onPress={handleToggleComplete}
+              style={({ pressed }) => [styles.checkboxWrap, pressed && styles.pressed]}
+              hitSlop={8}
+              accessibilityRole="checkbox"
+              accessibilityLabel={completed ? 'Action completed' : 'Mark action complete'}
+              accessibilityState={{ checked: completed }}
+            >
+              <View style={[styles.checkbox, completed && styles.checkboxChecked]}>
+                {completed && (
+                  <Ionicons name="checkmark" size={20} color={glassColors.text.primary} />
+                )}
+              </View>
+            </Pressable>
+          )}
           <View style={styles.content}>
             <View style={styles.badges}>
               <View style={styles.dateBadge}>
                 <Text style={styles.dateText}>{date}</Text>
               </View>
+              {isHistory && (
+                <View style={[styles.statusBadge, { borderColor: historyCfg!.color }]}>
+                  <Text style={[styles.statusBadgeText, { color: historyCfg!.color }]}>
+                    {historyCfg!.label}
+                  </Text>
+                </View>
+              )}
             </View>
             <View style={styles.transitBox}>
               <Text style={styles.transitLabel}>Your Cosmic Support:</Text>
               <Text style={styles.transitText}>{transit}</Text>
             </View>
             <View style={styles.actionRow}>
-              <Text style={[styles.actionText, completed && styles.actionCompleted]}>
+              <Text style={[
+                styles.actionText,
+                (completed || isHistory) && styles.actionCompleted,
+              ]}>
                 {action}
               </Text>
               {hasExpandContent && (
@@ -142,7 +176,7 @@ export function TimelineActionCard({
               </View>
             )}
           </View>
-          {onSkip && (
+          {!isHistory && onSkip && (
             <Pressable
               onPress={handleSkip}
               style={({ pressed }) => [styles.skipButton, pressed && styles.pressed]}
@@ -279,5 +313,18 @@ const styles = StyleSheet.create({
   skipText: {
     ...glassTypography.bodySmall,
     color: glassColors.text.tertiary,
+  },
+  historyWrapper: {
+    opacity: 0.75,
+  },
+  statusBadge: {
+    borderWidth: 1,
+    borderRadius: glassBorderRadius.full,
+    paddingHorizontal: glassSpacing.sm,
+    paddingVertical: glassSpacing.xs,
+    marginLeft: glassSpacing.xs,
+  },
+  statusBadgeText: {
+    ...glassTypography.labelSmall,
   },
 });

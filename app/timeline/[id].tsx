@@ -4,11 +4,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 
@@ -23,7 +25,9 @@ import { useLevelUp } from '@/contexts/LevelUpContext';
 import { usePointsRefresh } from '@/contexts/PointsRefreshContext';
 import { apiGet, apiPost } from '@/lib/api';
 import { getProgress, saveProgress } from '@/lib/progress-storage';
-import { getNextActionItem } from '@/lib/homeUtils';
+import { getNextActionItem, getMissedActionIndices } from '@/lib/homeUtils';
+import { parseActionDate } from '@/lib/parseActionDate';
+import type { HistoryStatus } from '@/components/timeline-action-card';
 import { supabase } from '@/lib/supabase';
 import type { SavedTimeline, TimelineAction } from '@/types/timeline';
 import { glassColors, glassSpacing, glassTypography } from '@/theme';
@@ -60,6 +64,7 @@ export default function TimelineDetailScreen() {
   const [affirmationImageUrl, setAffirmationImageUrl] = useState<string | null>(null);
   const [affirmed, setAffirmed] = useState(false);
   const [affirmLoading, setAffirmLoading] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   const loadTimeline = useCallback(async () => {
     if (!id || !user) {
@@ -298,12 +303,43 @@ export default function TimelineDetailScreen() {
     );
   }, [user, timeline, router]);
 
-  const visibleActions =
-    timeline?.actions?.filter((_, i) => !skippedActions.includes(i)) ?? [];
-
   const nextActionForCard = useMemo(() => {
     if (!timeline) return null;
     return getNextActionItem(timeline, completedActions, skippedActions);
+  }, [timeline, completedActions, skippedActions]);
+
+  // Upcoming: future actions that aren't skipped (completed ones still show as done)
+  const upcomingActions = useMemo(() => {
+    if (!timeline) return [];
+    const now = new Date();
+    return timeline.actions
+      .map((action, index) => ({ action, index }))
+      .filter(({ action, index }) => {
+        if (skippedActions.includes(index)) return false;
+        return parseActionDate(action.date) >= now;
+      });
+  }, [timeline, skippedActions]);
+
+  // History: past completed + past skipped + missed + future skipped
+  const historyItems = useMemo(() => {
+    if (!timeline) return [];
+    const now = new Date();
+    const missed = getMissedActionIndices(timeline, completedActions, skippedActions);
+    return timeline.actions
+      .map((action, index) => ({ action, index }))
+      .filter(({ action, index }) => {
+        const isPast = parseActionDate(action.date) < now;
+        if (completedActions.includes(index) && isPast) return true;
+        if (skippedActions.includes(index)) return true; // past or future skips
+        if (missed.includes(index)) return true;
+        return false;
+      })
+      .map(({ action, index }) => {
+        let status: HistoryStatus = 'missed';
+        if (completedActions.includes(index)) status = 'completed';
+        else if (skippedActions.includes(index)) status = 'skipped';
+        return { action, index, status };
+      });
   }, [timeline, completedActions, skippedActions]);
   const todayFormatted = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -377,13 +413,18 @@ export default function TimelineDetailScreen() {
         />
       )}
 
+      {!nextActionForCard && historyItems.length > 0 && (
+        <GlassCard>
+          <Text style={styles.allDoneText}>All actions complete</Text>
+        </GlassCard>
+      )}
+
       {!isFree &&
-        timeline.actions.map((action, index) => {
-          if (skippedActions.includes(index)) return null;
-          if (nextActionForCard && index === nextActionForCard.nextActionOriginalIndex) {
-            return null; // Already shown in NextActionCard above
-          }
-          return (
+        upcomingActions
+          .filter(({ index }) =>
+            nextActionForCard ? index !== nextActionForCard.nextActionOriginalIndex : true
+          )
+          .map(({ action, index }) => (
             <TimelineActionCard
               key={index}
               date={action.date}
@@ -393,12 +434,46 @@ export default function TimelineDetailScreen() {
               links={mapActionToLinks(action).length > 0 ? mapActionToLinks(action) : undefined}
               completed={completedActions.includes(index)}
               onToggleComplete={() => toggleComplete(index)}
-              onSkip={skipAction ? () => skipAction(index) : undefined}
+              onSkip={() => skipAction(index)}
               staggerIndex={index}
               reduceMotion={false}
             />
-          );
-        })}
+          ))}
+
+      {!isFree && historyItems.length > 0 && (
+        <GlassCard cardStyle={styles.historyCard}>
+          <Pressable
+            style={styles.historyHeader}
+            onPress={() => setHistoryExpanded((e) => !e)}
+            accessibilityRole="button"
+            accessibilityLabel={historyExpanded ? 'Collapse history' : 'Expand history'}
+          >
+            <Text style={styles.historyTitle}>History ({historyItems.length})</Text>
+            <Ionicons
+              name={historyExpanded ? 'chevron-up' : 'chevron-down'}
+              size={18}
+              color={glassColors.text.tertiary}
+            />
+          </Pressable>
+          {historyExpanded &&
+            historyItems.map(({ action, index, status }) => (
+              <TimelineActionCard
+                key={index}
+                date={action.date}
+                action={action.action}
+                transit={action.transit}
+                strategy={mapActionStrategy(action)}
+                links={mapActionToLinks(action).length > 0 ? mapActionToLinks(action) : undefined}
+                completed={completedActions.includes(index)}
+                onToggleComplete={() => {}}
+                staggerIndex={index}
+                reduceMotion={false}
+                historyStatus={status}
+              />
+            ))}
+        </GlassCard>
+      )}
+
       {isFree && timeline.actions.length > 0 && (
         <GlassCard>
           <Text style={styles.lockedTitle}>Full action timeline</Text>
@@ -500,5 +575,27 @@ const styles = StyleSheet.create({
   lockedCta: {
     ...glassTypography.label,
     color: glassColors.accent,
+  },
+  allDoneText: {
+    ...glassTypography.body,
+    color: glassColors.text.secondary,
+    textAlign: 'center',
+    paddingVertical: glassSpacing.sm,
+  },
+  historyCard: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    overflow: 'hidden',
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: glassSpacing.md,
+    paddingVertical: glassSpacing.md,
+  },
+  historyTitle: {
+    ...glassTypography.label,
+    color: glassColors.text.tertiary,
   },
 });
