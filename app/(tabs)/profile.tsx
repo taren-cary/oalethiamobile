@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import * as FileSystem from 'expo-file-system/legacy';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -352,6 +352,12 @@ export default function ProfileScreen() {
     fetchProfile();
     fetchLeaderboardPreview();
   }, [invalidateAt, fetchLevel, fetchProfile, fetchLeaderboardPreview]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchLeaderboardPreview();
+    }, [fetchLeaderboardPreview])
+  );
 
   const paddingTop = insets.top + glassSpacing.md;
   const paddingBottom = insets.bottom + 100;
