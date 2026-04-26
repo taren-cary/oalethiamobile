@@ -73,6 +73,8 @@ export default function ProfileScreen() {
   const subscriptionCtx = useSubscription();
   const isMounted = React.useRef(true);
   React.useEffect(() => () => { isMounted.current = false; }, []);
+  const sessionRef = React.useRef(session);
+  React.useEffect(() => { sessionRef.current = session; }, [session]);
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [levelLoading, setLevelLoading] = useState(true);
@@ -103,10 +105,10 @@ export default function ProfileScreen() {
     }
     try {
       const res = await apiGet('/api/profile', session);
-      if (!isMounted.current) return;
+      if (!isMounted.current || !sessionRef.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current) return;
+        if (!isMounted.current || !sessionRef.current) return;
         setStreak(data.stats?.currentStreak ?? 0);
       }
     } catch {
@@ -123,10 +125,10 @@ export default function ProfileScreen() {
     }
     try {
       const res = await apiGet('/api/user-level', session);
-      if (!isMounted.current) return;
+      if (!isMounted.current || !sessionRef.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current) return;
+        if (!isMounted.current || !sessionRef.current) return;
         setLevelData({
           level: data.level,
           levelName: data.levelName,
@@ -151,10 +153,10 @@ export default function ProfileScreen() {
     }
     try {
       const res = await apiGet('/api/user-subscription', session);
-      if (!isMounted.current) return;
+      if (!isMounted.current || !sessionRef.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current) return;
+        if (!isMounted.current || !sessionRef.current) return;
         setSubscriptionStatus(data);
       } else {
         if (isMounted.current) setSubscriptionStatus({ isFree: true, status: 'active' });
@@ -174,10 +176,10 @@ export default function ProfileScreen() {
     setLeaderboardPreviewError(null);
     try {
       const res = await apiGet('/api/leaderboard?limit=3', session);
-      if (!isMounted.current) return;
+      if (!isMounted.current || !sessionRef.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current) return;
+        if (!isMounted.current || !sessionRef.current) return;
         if (Array.isArray(data) && data.length > 0) {
           const formatted: LeaderboardEntry[] = data.slice(0, 3).map((entry: any, index: number) => ({
             rank: index + 1,

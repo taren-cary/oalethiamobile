@@ -144,6 +144,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const signOut = useCallback(async () => {
+    setUser(null);
+    setSession(null);
+    setIsFirstTimeUser(false);
     await supabase.auth.signOut();
   }, []);
 

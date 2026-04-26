@@ -61,13 +61,17 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
   // Prevent double-fetching on rapid session changes.
   const fetchingRef = useRef(false);
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
 
   const refreshSubscription = useCallback(async () => {
     if (!session) return;
     try {
       const res = await apiGet('/api/user-subscription', session);
+      if (!sessionRef.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (!sessionRef.current) return;
         const raw = data.tier ?? {};
         setTier({
           id: raw.id,
@@ -90,8 +94,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     if (!session) return;
     try {
       const res = await apiGet('/api/credits', session);
+      if (!sessionRef.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (!sessionRef.current) return;
         setCredits(data.credits ?? 0);
       }
     } catch (e) {
@@ -107,6 +113,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     setError(null);
     try {
       await IapService.syncOwnedEntitlements();
+      if (!sessionRef.current) {
+        fetchingRef.current = false;
+        return;
+      }
       await Promise.all([refreshSubscription(), refreshCredits()]);
     } finally {
       setLoading(false);
