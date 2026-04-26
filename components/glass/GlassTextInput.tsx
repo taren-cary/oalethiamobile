@@ -16,6 +16,7 @@ export interface GlassTextInputProps extends Omit<TextInputProps, 'style'> {
   error?: string;
   containerStyle?: object;
   inputStyle?: object;
+  rightAccessory?: React.ReactNode;
 }
 
 export function GlassTextInput({
@@ -23,6 +24,7 @@ export function GlassTextInput({
   error,
   containerStyle,
   inputStyle,
+  rightAccessory,
   placeholderTextColor = glassColors.text.tertiary,
   ...rest
 }: GlassTextInputProps) {
@@ -31,12 +33,24 @@ export function GlassTextInput({
       {label ? (
         <Text style={styles.label}>{label}</Text>
       ) : null}
-      <TextInput
-        placeholderTextColor={placeholderTextColor}
-        style={[styles.input, error ? styles.inputError : null, inputStyle]}
-        accessibilityLabel={label}
-        {...rest}
-      />
+      {rightAccessory ? (
+        <View style={[styles.inputRow, error ? styles.inputError : null]}>
+          <TextInput
+            placeholderTextColor={placeholderTextColor}
+            style={[styles.inputInner, inputStyle]}
+            accessibilityLabel={label}
+            {...rest}
+          />
+          {rightAccessory}
+        </View>
+      ) : (
+        <TextInput
+          placeholderTextColor={placeholderTextColor}
+          style={[styles.input, error ? styles.inputError : null, inputStyle]}
+          accessibilityLabel={label}
+          {...rest}
+        />
+      )}
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : null}
@@ -63,6 +77,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: glassSpacing.md,
     paddingVertical: glassSpacing.sm,
     minHeight: MIN_INPUT_HEIGHT,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: glassColors.glass.light,
+    borderWidth: 1,
+    borderColor: glassColors.glassBorder.default,
+    borderRadius: glassBorderRadius.input,
+    minHeight: MIN_INPUT_HEIGHT,
+    paddingHorizontal: glassSpacing.md,
+  },
+  inputInner: {
+    ...glassTypography.body,
+    color: glassColors.text.primary,
+    flex: 1,
+    paddingVertical: glassSpacing.sm,
   },
   inputError: {
     borderColor: glassColors.error,

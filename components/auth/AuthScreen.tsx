@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 import { GlassButton, GlassTextInput } from '@/components/glass';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,7 +29,7 @@ import {
 const USERNAME_MIN = 3;
 const PASSWORD_MIN = 6;
 
-type AuthMode = 'signup' | 'login';
+type AuthMode = 'signup' | 'login' | 'forgot';
 
 interface AuthScreenProps {
   onDone: () => void;
@@ -51,14 +52,40 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotSent, setForgotSent] = useState(false);
 
   const handleToggleMode = useCallback(() => {
     Haptics.selectionAsync();
     setMode((prev) => (prev === 'signup' ? 'login' : 'signup'));
     setError('');
+    setShowPassword(false);
   }, []);
+
+  const handleForgotPassword = useCallback(async () => {
+    const trimmed = forgotEmail.trim();
+    if (!trimmed) {
+      setError('Please enter your email address');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(trimmed);
+      if (resetError) {
+        setError(resetError.message);
+      } else {
+        setForgotSent(true);
+      }
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [forgotEmail]);
 
   const handleSubmit = useCallback(async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -161,6 +188,21 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
   ]);
 
   const isSignup = mode === 'signup';
+  const isForgot = mode === 'forgot';
+
+  const eyeButton = (
+    <Pressable
+      onPress={() => setShowPassword((v) => !v)}
+      hitSlop={8}
+      accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+    >
+      <Ionicons
+        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+        size={20}
+        color={glassColors.text.tertiary}
+      />
+    </Pressable>
+  );
 
   return (
     <KeyboardAvoidingView
@@ -204,56 +246,63 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
               </View>
 
               <Text style={styles.title}>
-                {isSignup ? 'Take command of your future' : 'Welcome back'}
+                {isForgot ? 'Reset your password' : isSignup ? 'Take command of your future' : 'Welcome back'}
               </Text>
               <Text style={styles.subtitle}>
-                {isSignup
+                {isForgot
+                  ? "Enter your email and we'll send you a reset link."
+                  : isSignup
                   ? 'Create an account to access your cosmic timelines anywhere.'
                   : 'Log in to access your saved timelines and crew leaderboard.'}
               </Text>
 
-              <View style={styles.modeToggleRow}>
-                <Pressable
-                  onPress={() => setMode('signup')}
-                  style={[
-                    styles.modeChip,
-                    isSignup && styles.modeChipActive,
-                  ]}
-                  accessibilityRole="tab"
-                  accessibilityLabel="Sign up"
-                  accessibilityState={{ selected: isSignup }}
-                >
-                  <Text
-                    style={[
-                      styles.modeChipText,
-                      isSignup && styles.modeChipTextActive,
-                    ]}
+              {!isForgot && (
+                <View style={styles.modeToggleRow}>
+                  <Pressable
+                    onPress={() => { setMode('signup'); setShowPassword(false); }}
+                    style={[styles.modeChip, isSignup && styles.modeChipActive]}
+                    accessibilityRole="tab"
+                    accessibilityLabel="Sign up"
+                    accessibilityState={{ selected: isSignup }}
                   >
-                    Sign up
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => setMode('login')}
-                  style={[
-                    styles.modeChip,
-                    !isSignup && styles.modeChipActive,
-                  ]}
-                  accessibilityRole="tab"
-                  accessibilityLabel="Log in"
-                  accessibilityState={{ selected: !isSignup }}
-                >
-                  <Text
-                    style={[
-                      styles.modeChipText,
-                      !isSignup && styles.modeChipTextActive,
-                    ]}
+                    <Text style={[styles.modeChipText, isSignup && styles.modeChipTextActive]}>
+                      Sign up
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => { setMode('login'); setShowPassword(false); }}
+                    style={[styles.modeChip, !isSignup && styles.modeChipActive]}
+                    accessibilityRole="tab"
+                    accessibilityLabel="Log in"
+                    accessibilityState={{ selected: !isSignup }}
                   >
-                    Log in
-                  </Text>
-                </Pressable>
-              </View>
+                    <Text style={[styles.modeChipText, !isSignup && styles.modeChipTextActive]}>
+                      Log in
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
 
-              {isSignup ? (
+              {isForgot ? (
+                forgotSent ? (
+                  <View style={styles.forgotSentWrap}>
+                    <Text style={styles.forgotSentText}>
+                      Check your email for a password reset link.
+                    </Text>
+                  </View>
+                ) : (
+                  <GlassTextInput
+                    label="Email"
+                    value={forgotEmail}
+                    onChangeText={(t) => { setForgotEmail(t); setError(''); }}
+                    placeholder="your@email.com"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    accessibilityLabel="Email"
+                  />
+                )
+              ) : isSignup ? (
                 <>
                   <GlassTextInput
                     label="Username"
@@ -279,7 +328,8 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="••••••••"
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
+                    rightAccessory={eyeButton}
                     accessibilityLabel="Password"
                   />
                 </>
@@ -300,9 +350,18 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                     value={password}
                     onChangeText={setPassword}
                     placeholder="••••••••"
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
+                    rightAccessory={eyeButton}
                     accessibilityLabel="Password"
                   />
+                  <Pressable
+                    onPress={() => { setMode('forgot'); setForgotEmail(loginId); setError(''); }}
+                    style={styles.forgotWrap}
+                    accessibilityRole="button"
+                    accessibilityLabel="Forgot password"
+                  >
+                    <Text style={styles.forgotText}>Forgot password?</Text>
+                  </Pressable>
                 </>
               )}
 
@@ -311,24 +370,37 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
                   <Text style={styles.errorText}>{error}</Text>
                 </View>
               ) : null}
-              <GlassButton
-                title={loading ? (isSignup ? 'Creating…' : 'Signing in…') : (isSignup ? 'Create account' : 'Log in')}
-                onPress={handleSubmit}
-                disabled={loading}
-                accessibilityLabel={isSignup ? 'Create account' : 'Log in'}
-                style={styles.primaryButton}
-              />
+
+              {!forgotSent && (
+                <GlassButton
+                  title={
+                    loading
+                      ? isForgot ? 'Sending…' : isSignup ? 'Creating…' : 'Signing in…'
+                      : isForgot ? 'Send reset link' : isSignup ? 'Create account' : 'Log in'
+                  }
+                  onPress={isForgot ? handleForgotPassword : handleSubmit}
+                  disabled={loading}
+                  style={styles.primaryButton}
+                />
+              )}
 
               <Pressable
-                onPress={handleToggleMode}
+                onPress={() => {
+                  if (isForgot) {
+                    setMode('login');
+                    setForgotSent(false);
+                    setError('');
+                  } else {
+                    handleToggleMode();
+                  }
+                }}
                 style={styles.switchWrap}
                 accessibilityRole="button"
-                accessibilityLabel={
-                  isSignup ? 'Switch to log in' : 'Switch to sign up'
-                }
               >
                 <Text style={styles.switchText}>
-                  {isSignup
+                  {isForgot
+                    ? 'Back to log in'
+                    : isSignup
                     ? 'Already have an account? Log in'
                     : "Don't have an account? Sign up"}
                 </Text>
@@ -424,6 +496,29 @@ const styles = StyleSheet.create({
   switchText: {
     ...glassTypography.body,
     color: glassColors.accent,
+    textAlign: 'center',
+  },
+  forgotWrap: {
+    alignSelf: 'flex-end',
+    marginTop: -glassSpacing.xs,
+    marginBottom: glassSpacing.sm,
+    paddingVertical: 4,
+  },
+  forgotText: {
+    ...glassTypography.bodySmall,
+    color: glassColors.accent,
+  },
+  forgotSentWrap: {
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    borderRadius: glassBorderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.4)',
+    padding: glassSpacing.md,
+    marginBottom: glassSpacing.md,
+  },
+  forgotSentText: {
+    ...glassTypography.body,
+    color: glassColors.text.primary,
     textAlign: 'center',
   },
   errorWrap: {
