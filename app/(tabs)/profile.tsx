@@ -71,6 +71,8 @@ export default function ProfileScreen() {
   const { user, session, signOut } = useAuth();
   const { invalidateAt } = usePointsRefresh();
   const subscriptionCtx = useSubscription();
+  const isMounted = React.useRef(true);
+  React.useEffect(() => () => { isMounted.current = false; }, []);
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [levelLoading, setLevelLoading] = useState(true);
@@ -101,14 +103,16 @@ export default function ProfileScreen() {
     }
     try {
       const res = await apiGet('/api/profile', session);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (!isMounted.current) return;
         setStreak(data.stats?.currentStreak ?? 0);
       }
     } catch {
       // ignore
     } finally {
-      setProfileLoading(false);
+      if (isMounted.current) setProfileLoading(false);
     }
   }, [session]);
 
@@ -119,8 +123,10 @@ export default function ProfileScreen() {
     }
     try {
       const res = await apiGet('/api/user-level', session);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (!isMounted.current) return;
         setLevelData({
           level: data.level,
           levelName: data.levelName,
@@ -134,7 +140,7 @@ export default function ProfileScreen() {
     } catch {
       // ignore
     } finally {
-      setLevelLoading(false);
+      if (isMounted.current) setLevelLoading(false);
     }
   }, [session]);
 
@@ -145,16 +151,18 @@ export default function ProfileScreen() {
     }
     try {
       const res = await apiGet('/api/user-subscription', session);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (!isMounted.current) return;
         setSubscriptionStatus(data);
       } else {
-        setSubscriptionStatus({ isFree: true, status: 'active' });
+        if (isMounted.current) setSubscriptionStatus({ isFree: true, status: 'active' });
       }
     } catch {
-      setSubscriptionStatus({ isFree: true, status: 'active' });
+      if (isMounted.current) setSubscriptionStatus({ isFree: true, status: 'active' });
     } finally {
-      setSubscriptionLoading(false);
+      if (isMounted.current) setSubscriptionLoading(false);
     }
   }, [session]);
 
@@ -166,8 +174,10 @@ export default function ProfileScreen() {
     setLeaderboardPreviewError(null);
     try {
       const res = await apiGet('/api/leaderboard?limit=3', session);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
+        if (!isMounted.current) return;
         if (Array.isArray(data) && data.length > 0) {
           const formatted: LeaderboardEntry[] = data.slice(0, 3).map((entry: any, index: number) => ({
             rank: index + 1,
@@ -187,10 +197,11 @@ export default function ProfileScreen() {
         setLeaderboardPreview([]);
       }
     } catch (e) {
+      if (!isMounted.current) return;
       setLeaderboardPreviewError(e instanceof Error ? e.message : 'Failed to load');
       setLeaderboardPreview([]);
     } finally {
-      setLeaderboardPreviewLoading(false);
+      if (isMounted.current) setLeaderboardPreviewLoading(false);
     }
   }, [session]);
 
@@ -223,31 +234,20 @@ export default function ProfileScreen() {
       return;
     }
     try {
-      console.log('🔍 Fetching avatar URL for user:', user.id);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('avatar_url, username')
         .eq('user_id', user.id)
         .maybeSingle();
-      
-      if (error) {
-        console.error('❌ Error fetching avatar:', error);
-        throw error;
-      }
-      
-      console.log('✅ Fetched profile data:', data);
+      if (!isMounted.current) return;
+      if (error) throw error;
       setAvatarUrl(data?.avatar_url ?? null);
       setUsername(data?.username ?? null);
-      
-      if (data?.avatar_url) {
-        console.log('🖼️ Avatar URL loaded:', data.avatar_url);
-      } else {
-        console.log('ℹ️ No avatar URL found for user');
+    } catch {
+      if (isMounted.current) {
+        setAvatarUrl(null);
+        setUsername(null);
       }
-    } catch (e) {
-      console.error('❌ Failed to fetch avatar:', e);
-      setAvatarUrl(null);
-      setUsername(null);
     }
   }, [user]);
 
