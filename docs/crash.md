@@ -1,13 +1,13 @@
-# EXC_BAD_ACCESS: Exception 1, Code 1, Subcode 5267567624 >
+# C++ Exception: N8facebook3jsi7JSErrorE: ExceptionsManager.reportException raised an exception: Unhandled JS Exception: Error: Rendered fewer hooks than expected. This may be caused by an accidental early return statement.
 
-**Issue ID:** 7443305226
+**Issue ID:** 7443334788
 **Project:** oalethia-mobile
-**Date:** 4/26/2026, 5:18:24 PM
+**Date:** 4/26/2026, 5:47:15 PM
 ## Issue Summary
-EXC_BAD_ACCESS in Hermes VM during GC/Object Access
-**What's wrong:** **EXC_BAD_ACCESS** crash during **Hermes GC** operation.
-**In the trace:** User interaction (touches) preceded the crash, potentially triggering the faulty state.
-**Possible cause:** The crash likely stems from accessing an invalid memory address (**KERN_INVALID_ADDRESS**) within the **Hermes VM** during garbage collection or object property lookup.
+React Hook Rule Violation: Fewer Hooks Rendered in ProfileScreen
+**What's wrong:** React hook rule violation: **fewer hooks rendered** than expected.
+**In the trace:** The error occurred during rendering of **ProfileScreen** component.
+**Possible cause:** An **early return** statement likely exists within the functional component logic.
 
 ## Tags
 
@@ -15,67 +15,74 @@ EXC_BAD_ACCESS in Hermes VM during GC/Object Access
 - **device:** iPhone14,2
 - **device.class:** high
 - **device.family:** iOS
-- **dist:** 55
+- **dist:** 56
 - **environment:** production
 - **event.environment:** native
 - **event.origin:** ios
 - **handled:** no
 - **level:** fatal
-- **mechanism:** mach
+- **mechanism:** cpp_exception
 - **os:** iOS 18.7.7
 - **os.build:** 22H340
 - **os.name:** iOS
 - **os.rooted:** no
-- **release:** com.oalethia.oalethia@1.0.0+55
+- **release:** com.oalethia.oalethia@1.0.0+56
 - **user:** id:CA66672F-2F9A-426D-B6EA-8D5CBFF3FB9F
 
 ## Exception
 
 ### Exception 1
-**Type:** EXC_BAD_ACCESS
-**Value:** Exception 1, Code 1, Subcode 5267567624 >
-KERN_INVALID_ADDRESS at 0x139f8b408.
+**Type:** C++ Exception
+**Value:** N8facebook3jsi7JSErrorE: ExceptionsManager.reportException raised an exception: Unhandled JS Exception: Error: Rendered fewer hooks than expected. This may be caused by an accidental early return statement.
+
+This error is located at:
+    at ProfileScreen ..., stack:
+finishRenderingHooks@1:258772
+renderWithHooks@1:258618
+updateFunctionComponent@1:277381
+beginWork@1:285264
+performUnitOfWork@1:303946
+workLoopSync@1:302954
+renderRootSync@1:302786
+performWorkOnRoot@1:300430
+performSyncWorkOnRoot@1:254154
+flushSyncWorkAcrossRoots_impl@1:253045
+processRootScheduleInMicrotask@1:253405
+anonymous@1:254249
+
+
+Error: ExceptionsManager.reportException raised an exception: Unhandled JS Exception: Error: Rendered fewer hooks than expected. This may be caused by an accidental early return statement.
+
+This error is located at:
+    at ProfileScreen ..., stack:
+finishRenderingHooks@1:258772
+renderWithHooks@1:258618
+updateFunctionComponent@1:277381
+beginWork@1:285264
+performUnitOfWork@1:303946
+workLoopSync@1:302954
+renderRootSync
+
+
+## Thread:  Thread 0
 
 #### Stacktrace
 
 ```
- hermes::vm::GCScope::_newChunkAndPHV in unknown file [Line null] (In app)
- hermes::vm::objectPrototypeHasOwnProperty in unknown file [Line null] (In app)
- hermes::vm::objectPrototypeHasOwnProperty in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::functionPrototypeCall in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::Interpreter::handleCallSlowPath in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
- hermes::vm::JSFunction::_callImpl in unknown file [Line null] (In app)
- hermes::vm::Callable::executeCall3 in unknown file [Line null] (In app)
- hermes::vm::arrayPrototypeMap in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::Interpreter::handleCallSlowPath in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
-```
-
-## Thread: com.facebook.react.runtime.JavaScript (crashed)
-
-#### Stacktrace
-
-```
- hermes::vm::GCScope::_newChunkAndPHV in unknown file [Line null] (In app)
- hermes::vm::objectPrototypeHasOwnProperty in unknown file [Line null] (In app)
- hermes::vm::objectPrototypeHasOwnProperty in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::functionPrototypeCall in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::Interpreter::handleCallSlowPath in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
- hermes::vm::JSFunction::_callImpl in unknown file [Line null] (In app)
- hermes::vm::Callable::executeCall3 in unknown file [Line null] (In app)
- hermes::vm::arrayPrototypeMap in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::Interpreter::handleCallSlowPath in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
+ OUTLINED_FUNCTION_0 in unknown file [Line null] (Not in app)
+ _xzm_free in unknown file [Line null] (Not in app)
+ std::__1::__hash_table<T>::~__hash_table in __hash_table [Line 1131] (Not in app)
+ std::__1::__hash_table<T>::~__hash_table in __hash_table [Line 1125] (Not in app)
+ std::__1::unordered_map<T>::~unordered_map[abi:ne200100] in unordered_map [Line 1192] (Not in app)
+ std::__1::unordered_map<T>::~unordered_map[abi:ne200100] in unordered_map [Line 1190] (Not in app)
+ reanimated::LayoutAnimationsProxy::parseRemoveMutations in LayoutAnimationsProxy.cpp [Line 243] (Not in app)
+ reanimated::LayoutAnimationsProxy::pullTransaction in LayoutAnimationsProxy.cpp [Line 45] (Not in app)
+ facebook::react::MountingCoordinator::pullTransaction in unknown file [Line null] (In app)
+ facebook::react::TelemetryController::pullTransaction in unknown file [Line null] (In app)
+ -[RCTMountingManager performTransaction:] in unknown file [Line null] (In app)
+ -[RCTMountingManager initiateTransaction:] in unknown file [Line null] (In app)
+ _dispatch_call_block_and_release in unknown file [Line null] (Not in app)
+ _dispatch_client_callout in unknown file [Line null] (Not in app)
+ _dispatch_main_queue_drain.cold.5 in unknown file [Line null] (Not in app)
+ _dispatch_main_queue_drain in unknown file [Line null] (Not in app)
 ```

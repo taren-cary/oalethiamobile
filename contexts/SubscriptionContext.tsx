@@ -168,14 +168,10 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
       appState.current = nextState;
 
-      if (wasBackground && isNowActive && session) {
-        // Best-effort: don't block the UI if StoreKit is slow.
+      if (wasBackground && isNowActive && sessionRef.current) {
         IapService.syncOwnedEntitlements()
-          .then(() => fetchAll())
-          .catch(() => {
-            // syncOwnedEntitlements already handles errors internally.
-            fetchAll();
-          });
+          .then(() => { if (sessionRef.current) fetchAll(); })
+          .catch(() => { if (sessionRef.current) fetchAll(); });
       }
     });
     return () => sub.remove();

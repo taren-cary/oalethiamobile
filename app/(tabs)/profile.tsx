@@ -73,8 +73,7 @@ export default function ProfileScreen() {
   const subscriptionCtx = useSubscription();
   const isMounted = React.useRef(true);
   React.useEffect(() => () => { isMounted.current = false; }, []);
-  const sessionRef = React.useRef(session);
-  React.useEffect(() => { sessionRef.current = session; }, [session]);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
 
   const [profileLoading, setProfileLoading] = useState(true);
   const [levelLoading, setLevelLoading] = useState(true);
@@ -98,37 +97,37 @@ export default function ProfileScreen() {
   );
   const [iapRestoring, setIapRestoring] = useState(false);
 
-  const fetchProfile = useCallback(async () => {
+  const fetchProfile = useCallback(async (signal?: AbortSignal) => {
     if (!session) {
       setProfileLoading(false);
       return;
     }
     try {
-      const res = await apiGet('/api/profile', session);
-      if (!isMounted.current || !sessionRef.current) return;
+      const res = await apiGet('/api/profile', session, signal);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current || !sessionRef.current) return;
+        if (!isMounted.current) return;
         setStreak(data.stats?.currentStreak ?? 0);
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
     } finally {
       if (isMounted.current) setProfileLoading(false);
     }
   }, [session]);
 
-  const fetchLevel = useCallback(async () => {
+  const fetchLevel = useCallback(async (signal?: AbortSignal) => {
     if (!session) {
       setLevelLoading(false);
       return;
     }
     try {
-      const res = await apiGet('/api/user-level', session);
-      if (!isMounted.current || !sessionRef.current) return;
+      const res = await apiGet('/api/user-level', session, signal);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current || !sessionRef.current) return;
+        if (!isMounted.current) return;
         setLevelData({
           level: data.level,
           levelName: data.levelName,
@@ -139,47 +138,48 @@ export default function ProfileScreen() {
           isMaxLevel: data.isMaxLevel ?? false,
         });
       }
-    } catch {
-      // ignore
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
     } finally {
       if (isMounted.current) setLevelLoading(false);
     }
   }, [session]);
 
-  const fetchSubscription = useCallback(async () => {
+  const fetchSubscription = useCallback(async (signal?: AbortSignal) => {
     if (!session) {
       setSubscriptionLoading(false);
       return;
     }
     try {
-      const res = await apiGet('/api/user-subscription', session);
-      if (!isMounted.current || !sessionRef.current) return;
+      const res = await apiGet('/api/user-subscription', session, signal);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current || !sessionRef.current) return;
+        if (!isMounted.current) return;
         setSubscriptionStatus(data);
       } else {
         if (isMounted.current) setSubscriptionStatus({ isFree: true, status: 'active' });
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       if (isMounted.current) setSubscriptionStatus({ isFree: true, status: 'active' });
     } finally {
       if (isMounted.current) setSubscriptionLoading(false);
     }
   }, [session]);
 
-  const fetchLeaderboardPreview = useCallback(async () => {
+  const fetchLeaderboardPreview = useCallback(async (signal?: AbortSignal) => {
     if (!session) {
       setLeaderboardPreviewLoading(false);
       return;
     }
     setLeaderboardPreviewError(null);
     try {
-      const res = await apiGet('/api/leaderboard?limit=3', session);
-      if (!isMounted.current || !sessionRef.current) return;
+      const res = await apiGet('/api/leaderboard?limit=3', session, signal);
+      if (!isMounted.current) return;
       if (res.ok) {
         const data = await res.json();
-        if (!isMounted.current || !sessionRef.current) return;
+        if (!isMounted.current) return;
         if (Array.isArray(data) && data.length > 0) {
           const formatted: LeaderboardEntry[] = data.slice(0, 3).map((entry: any, index: number) => ({
             rank: index + 1,
@@ -195,10 +195,13 @@ export default function ProfileScreen() {
           setLeaderboardPreview([]);
         }
       } else {
-        setLeaderboardPreviewError('Failed to load');
-        setLeaderboardPreview([]);
+        if (isMounted.current) {
+          setLeaderboardPreviewError('Failed to load');
+          setLeaderboardPreview([]);
+        }
       }
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return;
       if (!isMounted.current) return;
       setLeaderboardPreviewError(e instanceof Error ? e.message : 'Failed to load');
       setLeaderboardPreview([]);
@@ -208,10 +211,13 @@ export default function ProfileScreen() {
   }, [session]);
 
   useEffect(() => {
-    fetchProfile();
-    fetchLevel();
-    fetchSubscription();
-    fetchLeaderboardPreview();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    fetchProfile(controller.signal);
+    fetchLevel(controller.signal);
+    fetchSubscription(controller.signal);
+    fetchLeaderboardPreview(controller.signal);
+    return () => { controller.abort(); };
   }, [fetchProfile, fetchLevel, fetchSubscription, fetchLeaderboardPreview]);
 
   useEffect(() => {
@@ -350,46 +356,22 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (invalidateAt <= 0) return;
-    fetchLevel();
-    fetchProfile();
-    fetchLeaderboardPreview();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    fetchLevel(controller.signal);
+    fetchProfile(controller.signal);
+    fetchLeaderboardPreview(controller.signal);
+    return () => { controller.abort(); };
   }, [invalidateAt, fetchLevel, fetchProfile, fetchLeaderboardPreview]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchLeaderboardPreview();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      fetchLeaderboardPreview(controller.signal);
+      return () => { controller.abort(); };
     }, [fetchLeaderboardPreview])
   );
-
-  const paddingTop = insets.top + glassSpacing.md;
-  const paddingBottom = insets.bottom + 100;
-
-  if (!user) {
-    return (
-      <View style={styles.container}>
-        <Image
-          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
-          style={styles.backgroundImage}
-          contentFit="cover"
-          transition={300}
-          accessible={false}
-        />
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={[
-            styles.scrollContent,
-            { paddingTop, paddingBottom },
-          ]}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.title}>Profile</Text>
-        </ScrollView>
-      </View>
-    );
-  }
-
-  const displayName = username || user?.email || 'Signed in';
-  const displayInitial = displayName.charAt(0).toUpperCase();
 
   const handleDeleteAccount = useCallback(() => {
     if (!user || !session || accountDeleting) {
@@ -431,6 +413,7 @@ export default function ProfileScreen() {
                   {
                     text: 'OK',
                     onPress: () => {
+                      abortControllerRef.current?.abort();
                       signOut();
                     },
                   },
@@ -522,6 +505,35 @@ export default function ProfileScreen() {
     },
     [handleDeleteAccount, iapRestoring, session, user]
   );
+
+  const paddingTop = insets.top + glassSpacing.md;
+  const paddingBottom = insets.bottom + 100;
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <Image
+          source={require('@/assets/images/oalethiamobilebackground.jpeg')}
+          style={styles.backgroundImage}
+          contentFit="cover"
+          transition={300}
+          accessible={false}
+        />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop, paddingBottom },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>Profile</Text>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  const displayName = username || user?.email || 'Signed in';
 
   return (
     <View style={styles.container}>
@@ -956,7 +968,10 @@ export default function ProfileScreen() {
 
         <GlassButton
           title="Sign out"
-          onPress={() => signOut()}
+          onPress={() => {
+            abortControllerRef.current?.abort();
+            signOut();
+          }}
           variant="secondary"
           style={styles.button}
           accessibilityLabel="Sign out of your account"

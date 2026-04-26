@@ -324,7 +324,7 @@ function AppShell({ colorScheme }: AppShellProps) {
           </ThemeProvider>
           {!user && (
             <View style={StyleSheet.absoluteFill}>
-              <AuthScreen onDone={handleAuthDone} />
+              <AuthScreen onDone={handleAuthDone} initialMode="login" />
             </View>
           )}
         </>

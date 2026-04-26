@@ -33,9 +33,10 @@ type AuthMode = 'signup' | 'login' | 'forgot';
 
 interface AuthScreenProps {
   onDone: () => void;
+  initialMode?: 'signup' | 'login';
 }
 
-export function AuthScreen({ onDone }: AuthScreenProps) {
+export function AuthScreen({ onDone, initialMode = 'signup' }: AuthScreenProps) {
   const insets = useSafeAreaInsets();
   const { signUp, signIn } = useAuth();
   const {
@@ -47,7 +48,7 @@ export function AuthScreen({ onDone }: AuthScreenProps) {
     hasBirthData,
   } = useOnboarding();
 
-  const [mode, setMode] = useState<AuthMode>('signup');
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [loginId, setLoginId] = useState('');

@@ -26,11 +26,13 @@ export function getAuthHeaders(session: Session | null): HeadersInit {
  */
 export async function apiGet(
   path: string,
-  session: Session | null
+  session: Session | null,
+  signal?: AbortSignal
 ): Promise<Response> {
   return fetch(`${API_BASE_URL}${path}`, {
     method: 'GET',
     headers: getAuthHeaders(session),
+    signal,
   });
 }
 
