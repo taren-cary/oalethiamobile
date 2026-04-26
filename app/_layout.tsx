@@ -123,6 +123,7 @@ interface AppShellProps {
 
 function AppShell({ colorScheme }: AppShellProps) {
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [hasAuthenticated, setHasAuthenticated] = useState(false);
   const [birthDateDone, setBirthDateDone] = useState(false);
   const [birthTimeDone, setBirthTimeDone] = useState(false);
   const [birthLocationDone, setBirthLocationDone] = useState(false);
@@ -142,16 +143,18 @@ function AppShell({ colorScheme }: AppShellProps) {
     return () => sub.remove();
   }, [router]);
 
-  // Load onboarding completion flag once per device.
+  // Load onboarding completion and prior-auth flags once per device.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const key = getOnboardingStorageKey();
-        const stored = await AsyncStorage.getItem(key);
-        if (!cancelled && stored === 'true') {
-          setOnboardingComplete(true);
-        }
+        const [onboardingStored, authStored] = await Promise.all([
+          AsyncStorage.getItem(getOnboardingStorageKey()),
+          AsyncStorage.getItem('@oalethia/has_authenticated'),
+        ]);
+        if (cancelled) return;
+        if (onboardingStored === 'true') setOnboardingComplete(true);
+        if (authStored === 'true') setHasAuthenticated(true);
       } catch {
         // ignore storage errors; default to showing onboarding
       }
@@ -162,6 +165,7 @@ function AppShell({ colorScheme }: AppShellProps) {
   }, []);
 
   // If a logged-in user already has birth data, skip onboarding and birth wizard.
+  // If user signs out and has previously authenticated, jump back to AuthScreen.
   useEffect(() => {
     if (loading) return;
     if (user && !isFirstTimeUser) {
@@ -171,8 +175,15 @@ function AppShell({ colorScheme }: AppShellProps) {
       setBirthLocationDone(true);
       setCalculatingDone(true);
       setAuthDone(true);
+    } else if (!user && onboardingComplete && hasAuthenticated) {
+      setBirthDateDone(true);
+      setBirthTimeDone(true);
+      setBirthLocationDone(true);
+      setCalculatingDone(true);
+      setAuthDone(false);
+      hasCheckedWelcomeBadgeRef.current = false;
     }
-  }, [user, isFirstTimeUser, loading]);
+  }, [user, isFirstTimeUser, loading, onboardingComplete, hasAuthenticated]);
 
   const handleOnboardingFinish = useCallback((opts: { skipped: boolean }) => {
     setOnboardingComplete(true);
@@ -202,6 +213,8 @@ function AppShell({ colorScheme }: AppShellProps) {
 
   const handleAuthDone = useCallback(() => {
     setAuthDone(true);
+    setHasAuthenticated(true);
+    AsyncStorage.setItem('@oalethia/has_authenticated', 'true').catch(() => {});
   }, []);
 
   // After auth completes, decide whether to show the Level 1 welcome badge
