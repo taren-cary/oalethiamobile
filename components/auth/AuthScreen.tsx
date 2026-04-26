@@ -32,7 +32,7 @@ const PASSWORD_MIN = 6;
 type AuthMode = 'signup' | 'login' | 'forgot';
 
 interface AuthScreenProps {
-  onDone: () => void;
+  onDone: (opts: { isNewSignup: boolean }) => void;
   initialMode?: 'signup' | 'login';
 }
 
@@ -144,7 +144,7 @@ export function AuthScreen({ onDone, initialMode = 'signup' }: AuthScreenProps) 
           setLoading(false);
           return;
         }
-        onDone();
+        onDone({ isNewSignup: true });
       } catch {
         setError('Something went wrong. Please try again.');
       } finally {
@@ -164,7 +164,7 @@ export function AuthScreen({ onDone, initialMode = 'signup' }: AuthScreenProps) 
           setLoading(false);
           return;
         }
-        onDone();
+        onDone({ isNewSignup: false });
       } catch {
         setError('Something went wrong. Please try again.');
       } finally {

@@ -131,6 +131,7 @@ function AppShell({ colorScheme }: AppShellProps) {
   const [authDone, setAuthDone] = useState(false);
   const [showWelcomeBadge, setShowWelcomeBadge] = useState(false);
   const hasCheckedWelcomeBadgeRef = useRef(false);
+  const isNewSignupRef = useRef(false);
 
   const { user, isFirstTimeUser, loading } = useAuth();
   const router = useRouter();
@@ -181,6 +182,7 @@ function AppShell({ colorScheme }: AppShellProps) {
       setBirthLocationDone(true);
       setCalculatingDone(true);
       hasCheckedWelcomeBadgeRef.current = false;
+      isNewSignupRef.current = false;
     }
   }, [user, isFirstTimeUser, loading, onboardingComplete, hasAuthenticated]);
 
@@ -210,7 +212,8 @@ function AppShell({ colorScheme }: AppShellProps) {
     setCalculatingDone(true);
   }, []);
 
-  const handleAuthDone = useCallback(() => {
+  const handleAuthDone = useCallback((opts: { isNewSignup: boolean }) => {
+    isNewSignupRef.current = opts.isNewSignup;
     setAuthDone(true);
     setHasAuthenticated(true);
     AsyncStorage.setItem('@oalethia/has_authenticated', 'true').catch(() => {});
@@ -221,6 +224,7 @@ function AppShell({ colorScheme }: AppShellProps) {
   useEffect(() => {
     if (!user) return;
     if (!authDone) return;
+    if (!isNewSignupRef.current) return;
     if (hasCheckedWelcomeBadgeRef.current) return;
     hasCheckedWelcomeBadgeRef.current = true;
     let cancelled = false;
