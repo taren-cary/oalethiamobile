@@ -33,7 +33,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import 'react-native-reanimated';
-import { View, type ColorSchemeName } from 'react-native';
+import { StyleSheet, View, type ColorSchemeName } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -180,7 +180,6 @@ function AppShell({ colorScheme }: AppShellProps) {
       setBirthTimeDone(true);
       setBirthLocationDone(true);
       setCalculatingDone(true);
-      setAuthDone(false);
       hasCheckedWelcomeBadgeRef.current = false;
     }
   }, [user, isFirstTimeUser, loading, onboardingComplete, hasAuthenticated]);
@@ -323,6 +322,11 @@ function AppShell({ colorScheme }: AppShellProps) {
               </LevelUpProvider>
             </PointsRefreshProvider>
           </ThemeProvider>
+          {!user && (
+            <View style={StyleSheet.absoluteFill}>
+              <AuthScreen onDone={handleAuthDone} />
+            </View>
+          )}
         </>
       )}
     </>

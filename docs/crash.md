@@ -1,81 +1,36 @@
-# EXC_BAD_ACCESS:  p@L_ >
+# WatchdogTermination: The OS watchdog terminated your app, possibly because it overused RAM.
 
-**Issue ID:** 7443229595
+**Issue ID:** 7443266882
 **Project:** oalethia-mobile
-**Date:** 4/26/2026, 4:12:47 PM
+**Date:** 4/26/2026, 4:43:20 PM
 ## Issue Summary
-Hermes EXC_BAD_ACCESS during JS execution, possibly use-after-free.
-**What's wrong:** **EXC_BAD_ACCESS** crash within **Hermes VM** during JavaScript execution.
-**In the trace:** Crash occurred during React Native event loop processing after successful **HTTP requests**.
-**Possible cause:** The crash points to an invalid memory access (**KERN_INVALID_ADDRESS**) likely due to **use-after-free** or accessing **uninitialized object** in Hermes.
+Watchdog Termination from Suspected RAM Overuse Linked to Hooks Error
+**What's wrong:** App terminated by **OS watchdog** due to **excessive RAM usage**.
+**In the trace:** Multiple user **touch events** occurred just before termination, possibly triggering the memory issue.
+**Possible cause:** The **React Hooks rule violation** (early return) might be causing components to re-render improperly, leading to an **uncontrolled memory leak**.
 
 ## Tags
 
-- **app.device:** 635efaf5de5c9fb31785b8e882eb3342eaf4d731
 - **device:** iPhone14,2
 - **device.class:** high
 - **device.family:** iOS
-- **dist:** 53
+- **dist:** 54
 - **environment:** production
 - **event.environment:** native
 - **event.origin:** ios
 - **handled:** no
 - **level:** fatal
-- **mechanism:** mach
+- **mechanism:** watchdog_termination
 - **os:** iOS 18.7.7
 - **os.build:** 22H340
 - **os.name:** iOS
 - **os.rooted:** no
-- **release:** com.oalethia.oalethia@1.0.0+53
+- **release:** com.oalethia.oalethia@1.0.0+54
 - **user:** id:CA66672F-2F9A-426D-B6EA-8D5CBFF3FB9F
 
 ## Exception
 
 ### Exception 1
-**Type:** EXC_BAD_ACCESS
-**Value:**  p@L_ >
-KERN_INVALID_ADDRESS at 0x61.
+**Type:** WatchdogTermination
+**Value:** The OS watchdog terminated your app, possibly because it overused RAM.
 
-#### Stacktrace
-
-```
- hermes::vm::JSObject::getNamedDescriptorUnsafe in unknown file [Line null] (In app)
- hermes::vm::JSObject::putNamedWithReceiver_RJS in unknown file [Line null] (In app)
- hermes::vm::JSObject::putNamedWithReceiver_RJS in unknown file [Line null] (In app)
- hermes::vm::arrayConstructor in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::Interpreter::handleCallSlowPath in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
- hermes::vm::JSFunction::_callImpl in unknown file [Line null] (In app)
- hermes::vm::Callable::executeCall1 in unknown file [Line null] (In app)
- hermes::vm::JSObject::putNamedWithReceiver_RJS in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
- hermes::vm::JSFunction::_callImpl in unknown file [Line null] (In app)
- facebook::hermes::(anonymous namespace)::HermesRuntimeImpl::call in unknown file [Line null] (In app)
- facebook::react::Task::execute in unknown file [Line null] (In app)
-```
-
-## Thread: com.facebook.react.runtime.JavaScript (crashed)
-
-#### Stacktrace
-
-```
- hermes::vm::JSObject::getNamedDescriptorUnsafe in unknown file [Line null] (In app)
- hermes::vm::JSObject::putNamedWithReceiver_RJS in unknown file [Line null] (In app)
- hermes::vm::JSObject::putNamedWithReceiver_RJS in unknown file [Line null] (In app)
- hermes::vm::arrayConstructor in unknown file [Line null] (In app)
- hermes::vm::NativeFunction::_nativeCall in unknown file [Line null] (In app)
- hermes::vm::Interpreter::handleCallSlowPath in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
- hermes::vm::JSFunction::_callImpl in unknown file [Line null] (In app)
- hermes::vm::Callable::executeCall1 in unknown file [Line null] (In app)
- hermes::vm::JSObject::putNamedWithReceiver_RJS in unknown file [Line null] (In app)
- hermes::vm::Interpreter::interpretFunction<T> in unknown file [Line null] (In app)
- hermes::vm::Runtime::interpretFunctionImpl in unknown file [Line null] (In app)
- hermes::vm::JSFunction::_callImpl in unknown file [Line null] (In app)
- facebook::hermes::(anonymous namespace)::HermesRuntimeImpl::call in unknown file [Line null] (In app)
- facebook::react::Task::execute in unknown file [Line null] (In app)
-```
