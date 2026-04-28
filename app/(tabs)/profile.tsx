@@ -279,13 +279,7 @@ export default function ProfileScreen() {
   const pickAndUploadAvatar = useCallback(async () => {
     if (!user || avatarUploading) return;
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert(
-        'Permission needed',
-        'Please allow photo library access to set a profile picture.'
-      );
-      return;
-    }
+    if (status !== 'granted') return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
